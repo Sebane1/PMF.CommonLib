@@ -2,5 +2,5 @@
 
 public interface IDownloadUpdater
 {
-    Task<string?> DownloadAndExtractLatestUpdaterAsync(string outputFolder, CancellationToken ct);
+    Task<string?> DownloadAndExtractLatestUpdaterAsync(CancellationToken ct);
 }

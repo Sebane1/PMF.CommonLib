@@ -16,10 +16,10 @@ public class DownloadUpdater : IDownloadUpdater
         _aria2Service = aria2Service;
     }
 
-    public async Task<string?> DownloadAndExtractLatestUpdaterAsync(string outputFolder, CancellationToken ct)
+    public async Task<string?> DownloadAndExtractLatestUpdaterAsync(CancellationToken ct)
     {
-        _logger.Debug("Entered `DownloadAndExtractLatestUpdaterAsync` with `outputFolder`: {OutputFolder}", outputFolder);
-        
+        _logger.Debug("Entered `DownloadAndExtractLatestUpdaterAsync`...");
+
         var latestRelease = await _updateService.GetLatestReleaseAsync(false, "CouncilOfTsukuyomi/Updater");
         if (latestRelease == null)
         {
@@ -32,7 +32,7 @@ public class DownloadUpdater : IDownloadUpdater
             _logger.Warn("Release found, but no assets available for download. Aborting.");
             return null;
         }
-        
+            
         var zipAsset = latestRelease.Assets
             .FirstOrDefault(a => a.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase));
         if (zipAsset == null)
@@ -42,40 +42,38 @@ public class DownloadUpdater : IDownloadUpdater
         }
 
         _logger.Info("Found updater asset: {Name}, Download URL: {Url}", zipAsset.Name, zipAsset.BrowserDownloadUrl);
-        
-        var tempFolder = Path.Combine(Path.GetTempPath(), "CouncilOfTsukuyomi");
-        if (!Directory.Exists(tempFolder))
+
+        // Create or obtain a download directory (could be a temp folder)
+        var downloadFolder = Path.Combine(Path.GetTempPath(), "CouncilOfTsukuyomi");
+        if (!Directory.Exists(downloadFolder))
         {
-            Directory.CreateDirectory(tempFolder);
-            _logger.Debug("Created temp folder at `{TempFolder}`.", tempFolder);
+            Directory.CreateDirectory(downloadFolder);
+            _logger.Debug("Created temp folder at `{DownloadFolder}`.", downloadFolder);
         }
-        
+            
         _logger.Debug("Starting download of updater asset...");
-        var downloadSucceeded = await _aria2Service.DownloadFileAsync(zipAsset.BrowserDownloadUrl, tempFolder, ct);
+        var downloadSucceeded = await _aria2Service.DownloadFileAsync(zipAsset.BrowserDownloadUrl, downloadFolder, ct);
         if (!downloadSucceeded)
         {
             _logger.Error("Download failed for updater asset: {AssetName}", zipAsset.Name);
             return null;
         }
         _logger.Info("Updater asset download complete.");
-        
-        var downloadedZipPath = Path.Combine(tempFolder, Path.GetFileName(new Uri(zipAsset.BrowserDownloadUrl).AbsolutePath));
-        _logger.Debug("Local path to downloaded zip: {DownloadedZipPath}", downloadedZipPath);
-        
-        if (!Directory.Exists(outputFolder))
-        {
-            Directory.CreateDirectory(outputFolder);
-            _logger.Debug("Created or verified existence of the output folder `{OutputFolder}`.", outputFolder);
-        }
 
+        // Build path to downloaded zip
+        var downloadedZipPath = Path.Combine(downloadFolder,
+            Path.GetFileName(new Uri(zipAsset.BrowserDownloadUrl).AbsolutePath));
+        _logger.Debug("Local path to downloaded zip: {DownloadedZipPath}", downloadedZipPath);
+
+        // Extract the zip in the same folder it was downloaded to
         try
         {
             _logger.Debug("Beginning extraction of the downloaded zip.");
             using (var archive = new ArchiveFile(downloadedZipPath))
             {
-                archive.Extract(outputFolder, overwrite: true);
+                archive.Extract(downloadFolder, overwrite: true);
             }
-            _logger.Info("Extraction completed successfully to `{OutputFolder}`.", outputFolder);
+            _logger.Info("Extraction completed successfully into `{DownloadFolder}`.", downloadFolder);
         }
         catch (Exception ex)
         {
@@ -97,15 +95,16 @@ public class DownloadUpdater : IDownloadUpdater
                 }
             }
         }
-        
-        var updaterPath = Path.Combine(outputFolder, "Updater.exe");
+
+        // Return the path to the expected updater executable
+        var updaterPath = Path.Combine(downloadFolder, "Updater.exe");
         if (File.Exists(updaterPath))
         {
             _logger.Debug("Updater.exe found at `{UpdaterPath}`. Returning path.", updaterPath);
             return updaterPath;
         }
 
-        _logger.Warn("Updater.exe not found in `{OutputFolder}` after extraction.", outputFolder);
+        _logger.Warn("Updater.exe not found in `{DownloadFolder}` after extraction.", downloadFolder);
         return null;
     }
 }
