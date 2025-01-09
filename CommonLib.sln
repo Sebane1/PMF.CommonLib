@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonLib", "CommonLib\CommonLib.csproj", "{C811C5A4-86B6-4956-BB09-46548CB084B4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SevenZipExtractor", "SevenZipExtractor\SevenZipExtractor\SevenZipExtractor.csproj", "{442606CF-D53B-437F-A172-486E7D9B464C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C811C5A4-86B6-4956-BB09-46548CB084B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C811C5A4-86B6-4956-BB09-46548CB084B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C811C5A4-86B6-4956-BB09-46548CB084B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C811C5A4-86B6-4956-BB09-46548CB084B4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{442606CF-D53B-437F-A172-486E7D9B464C}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{442606CF-D53B-437F-A172-486E7D9B464C}.Debug|Any CPU.Build.0 = Debug|x64
+		{442606CF-D53B-437F-A172-486E7D9B464C}.Release|Any CPU.ActiveCfg = Release|x64
+		{442606CF-D53B-437F-A172-486E7D9B464C}.Release|Any CPU.Build.0 = Release|x64
+	EndGlobalSection
+EndGlobal

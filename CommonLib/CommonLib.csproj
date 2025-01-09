@@ -22,12 +22,12 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\SevenZipExtractor\SevenZipExtractor\SevenZipExtractor.csproj" />
+      <None Remove="Sounds\notification.mp3" />
+      <EmbeddedResource Include="Sounds\notification.mp3" />
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="Sounds\notification.mp3" />
-      <EmbeddedResource Include="Sounds\notification.mp3" />
+      <ProjectReference Include="..\SevenZipExtractor\SevenZipExtractor\SevenZipExtractor.csproj" />
     </ItemGroup>
 
 </Project>
