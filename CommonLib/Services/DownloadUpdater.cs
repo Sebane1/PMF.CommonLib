@@ -45,7 +45,7 @@ public class DownloadUpdater : IDownloadUpdater
         _logger.Info("Found updater asset: {Name}, Download URL: {Url}", zipAsset.Name, zipAsset.BrowserDownloadUrl);
 
         // Create or obtain a download directory (could be a temp folder)
-        var downloadFolder = Path.Combine(Path.GetTempPath(), "CouncilOfTsukuyomi");
+        var downloadFolder = Path.Combine(Path.GetTempPath(), "Council Of Tsukuyomi");
         if (!Directory.Exists(downloadFolder))
         {
             Directory.CreateDirectory(downloadFolder);
