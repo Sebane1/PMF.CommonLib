@@ -130,7 +130,26 @@ public class UpdateService : IUpdateService
         using var response = await httpClient.GetAsync(url);
         _logger.Debug("GitHub releases GET request completed with status code {StatusCode}", response.StatusCode);
 
-        var releases = await response.Content.ReadAsJsonAsync<List<GitHubRelease>>();
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            _logger.Error("Request for releases did not succeed with status {StatusCode}. Response: {ErrorContent}",
+                response.StatusCode, errorContent);
+            return null;
+        }
+
+        List<GitHubRelease>? releases;
+        try
+        {
+            releases = await response.Content.ReadAsJsonAsync<List<GitHubRelease>>();
+        }
+        catch (JsonSerializationException ex)
+        {
+            var content = await response.Content.ReadAsStringAsync();
+            _logger.Error(ex, "Error during JSON deserialization. Actual response: {Content}", content);
+            return null;
+        }
+
         if (releases == null || releases.Count == 0)
         {
             _logger.Debug("No releases were deserialized or the list is empty.");
