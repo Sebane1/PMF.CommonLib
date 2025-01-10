@@ -11,18 +11,16 @@ public class DownloadAndInstallUpdates : IDownloadAndInstallUpdates
 
     private readonly IAria2Service _aria2Service;
     private readonly IUpdateService _updateService;
-
-    // Add a private field to store the repo name.
-    private readonly string _repository;
+    private readonly IAppArguments _appArgs;
 
     public DownloadAndInstallUpdates(
         IAria2Service aria2Service, 
         IUpdateService updateService,
-        string repository)
+        IAppArguments appArgs)
     {
         _aria2Service = aria2Service;
         _updateService = updateService;
-        _repository = repository;
+        _appArgs = appArgs;
     }
 
     public async Task<(bool success, string downloadPath)> DownloadAndInstallAsync(string currentVersion)
@@ -31,10 +29,10 @@ public class DownloadAndInstallUpdates : IDownloadAndInstallUpdates
         {
             // Include the repository in your logging
             _logger.Info("Checking if update is needed for version {Version} in repo {Repository}",
-                currentVersion, _repository);
+                currentVersion, _appArgs.GitHubRepo);
 
             // Call NeedsUpdateAsync with the repository
-            var needsUpdate = await _updateService.NeedsUpdateAsync(currentVersion, _repository);
+            var needsUpdate = await _updateService.NeedsUpdateAsync(currentVersion, _appArgs.GitHubRepo);
             if (!needsUpdate)
             {
                 _logger.Info("No update needed. Current version is up-to-date.");
@@ -47,29 +45,29 @@ public class DownloadAndInstallUpdates : IDownloadAndInstallUpdates
             Directory.CreateDirectory(tempDir);
 
             // Get the zip links passing the repository param
-            var zipUrls = await _updateService.GetUpdateZipLinksAsync(currentVersion, _repository);
+            var zipUrls = await _updateService.GetUpdateZipLinksAsync(currentVersion, _appArgs.GitHubRepo);
             if (zipUrls.Count == 0)
             {
                 _logger.Warn("No .zip assets found for the latest release in {Repository}. Update cannot proceed.",
-                    _repository);
+                    _appArgs.GitHubRepo);
                 return (false, string.Empty);
             }
 
             var osFilteredUrls = zipUrls.Where(IsOsCompatibleAsset).ToList();
             if (osFilteredUrls.Count == 0)
             {
-                _logger.Warn("No assets matching the current OS were found in {Repository}.", _repository);
+                _logger.Warn("No assets matching the current OS were found in {Repository}.", _appArgs.GitHubRepo);
                 return (false, string.Empty);
             }
 
             var downloadedPaths = new List<string>();
             foreach (var url in osFilteredUrls)
             {
-                _logger.Info("Starting download for {Url} from {Repository}", url, _repository);
+                _logger.Info("Starting download for {Url} from {Repository}", url, _appArgs.GitHubRepo);
                 var success = await _aria2Service.DownloadFileAsync(url, tempDir, CancellationToken.None);
                 if (!success)
                 {
-                    _logger.Error("Failed to download {Url} from {Repository}. Aborting update.", url, _repository);
+                    _logger.Error("Failed to download {Url} from {Repository}. Aborting update.", url, _appArgs.GitHubRepo);
                     return (false, string.Empty);
                 }
 
@@ -83,18 +81,18 @@ public class DownloadAndInstallUpdates : IDownloadAndInstallUpdates
                 var extractOk = await ExtractZipsAsync(zipPath, tempDir, CancellationToken.None);
                 if (!extractOk)
                 {
-                    _logger.Error("Failed to extract {ZipPath} from {Repository}. Aborting update.", zipPath, _repository);
+                    _logger.Error("Failed to extract {ZipPath} from {Repository}. Aborting update.", zipPath, _appArgs.GitHubRepo);
                     return (false, string.Empty);
                 }
             }
 
             _logger.Info("All OS-compatible .zip assets have been downloaded and extracted to {Directory} for {Repository}",
-                tempDir, _repository);
+                tempDir, _appArgs.GitHubRepo);
             return (true, tempDir);
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "An error occurred while downloading and installing updates for {Repository}", _repository);
+            _logger.Error(ex, "An error occurred while downloading and installing updates for {Repository}", _appArgs.GitHubRepo);
             return (false, string.Empty);
         }
     }
