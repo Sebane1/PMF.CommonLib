@@ -23,11 +23,18 @@ public class Aria2Service : IAria2Service
     public string Aria2Folder { get; }
     public string Aria2ExePath => Path.Combine(Aria2Folder, "aria2c.exe");
 
-    public Aria2Service(string aria2InstallFolder)
+    public Aria2Service(string baseInstallFolder)
     {
-        // Store folder path, but do NOT automatically start downloading in constructor
-        // to avoid competing tasks. The actual check will happen when needed.
-        Aria2Folder = aria2InstallFolder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        // Force aria2c to always reside in the Lib folder
+        var libFolder = Path.Combine(baseInstallFolder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar), "Lib");
+
+        if (!Directory.Exists(libFolder))
+        {
+            Directory.CreateDirectory(libFolder);
+            _logger.Info("Created Lib directory at {LibFolder}", libFolder);
+        }
+
+        Aria2Folder = libFolder;
     }
 
     public async Task<bool> EnsureAria2AvailableAsync(CancellationToken ct)
