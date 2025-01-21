@@ -19,6 +19,7 @@
       <PackageReference Include="Sentry" Version="5.0.0" />
       <PackageReference Include="Sentry.NLog" Version="5.0.0" />
       <PackageReference Include="Sentry.Profiling" Version="5.0.0" />
+      <PackageReference Include="System.Management" Version="9.0.1" />
     </ItemGroup>
 
     <ItemGroup>

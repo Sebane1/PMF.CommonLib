@@ -3,6 +3,8 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 using NLog;
+using PenumbraModForwarder.Common.Enums;
+using PenumbraModForwarder.Common.Extensions;
 using PenumbraModForwarder.Common.Interfaces;
 using SevenZipExtractor;
 
@@ -94,7 +96,14 @@ public class Aria2Service : IAria2Service
                 rawFileName = "download.bin";
 
             var finalFileName = Uri.UnescapeDataString(rawFileName);
-            var extraAria2Args = "--log-level=debug";
+
+            // Check if the drive where the file will be saved is an SSD or HDD
+            var driveType = DriveTypeDetector.GetDriveType(sanitizedDirectory);
+            
+            // If it's an SSD, use --file-allocation=none, otherwise leave it out
+            var extraAria2Args = driveType == DriveTypeCommon.Ssd
+                ? "--log-level=debug --file-allocation=none"
+                : "--log-level=debug";
 
             var arguments = $"\"{fileUrl}\" --dir=\"{sanitizedDirectory}\" --out=\"{finalFileName}\" {extraAria2Args}";
 
@@ -162,6 +171,7 @@ public class Aria2Service : IAria2Service
             return false;
         }
     }
+
 
     // Internal method that does the actual check and optional install
     private async Task<bool> InternalEnsureAria2AvailableAsync(CancellationToken ct)
