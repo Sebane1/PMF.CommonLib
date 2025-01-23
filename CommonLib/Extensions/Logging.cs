@@ -20,8 +20,14 @@ public static class Logging
         {
             Layout = "[${longdate} ${level:uppercase=true}] [${logger}] ${message}${exception}"
         };
-        config.AddTarget(consoleTarget);
+
+#if DEBUG
+        // In Debug mode, include all log levels in console.
         config.AddRuleForAllLevels(consoleTarget);
+#else
+            // In Release mode, filter out Debug (and Trace) level logs on console.
+            config.AddRule(LogLevel.Info, LogLevel.Warning, consoleTarget);
+#endif
 
         var fileTarget = new FileTarget("file")
         {
@@ -68,7 +74,7 @@ public static class Logging
             : $"{version.Major}.{version.Minor}.{version.Build}";
 
         var config = CreateBaseConfiguration(applicationName);
-        
+
         config.AddSentry(options =>
         {
             options.Dsn = sentryDsn;
