@@ -26,7 +26,7 @@ public static class Logging
         config.AddRuleForAllLevels(consoleTarget);
 #else
             // In Release mode, filter out Debug (and Trace) level logs on console.
-            config.AddRule(LogLevel.Info, LogLevel.Warning, consoleTarget);
+            config.AddRule(LogLevel.Info, LogLevel.Warn, consoleTarget);
 #endif
 
         var fileTarget = new FileTarget("file")
