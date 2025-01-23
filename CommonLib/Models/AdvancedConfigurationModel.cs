@@ -4,8 +4,8 @@ namespace PenumbraModForwarder.Common.Models;
 
 public class AdvancedConfigurationModel
 {
-    [Display(Name = "Hide Window On Startup", GroupName = "Mod Forwarder", Description = "Hide Window On Startup")]
-    public bool HideWindowOnStartup { get; set; } = true;
+    [Display(Name = "Minimise To Tray", GroupName = "Mod Forwarder", Description = "Minimise the Main Window to tray")]
+    public bool MinimiseToTray { get; set; } = false;
     [Display(Name = "Penumbra Api Timeout (Seconds)", GroupName = "Penumbra", Description = "How long to wait for the Penumbra Api to respond")]
     public int PenumbraTimeOutInSeconds { get; set; } = 60;
     [Display(Name = "Show Watchdog Window", GroupName = "Mod Forwarder", Description = "Show the console application window for Watchdog")]
