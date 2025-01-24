@@ -12,33 +12,33 @@ public class ConvertConfiguration : Profile
     {
         CreateMap<OldConfigModel.OldConfigurationModel, ConfigurationModel>()
             // AutoDelete -> BackgroundWorker.AutoDelete
-            .ForMember(
+            .ForPath(
                 dest => dest.BackgroundWorker.AutoDelete,
                 opt => opt.MapFrom(src => src.AutoDelete))
-
+                
             // FileLinkingEnabled -> Common.FileLinkingEnabled
-            .ForMember(
+            .ForPath(
                 dest => dest.Common.FileLinkingEnabled,
                 opt => opt.MapFrom(src => src.FileLinkingEnabled))
-
+                
             // StartOnBoot -> Common.StartOnBoot
-            .ForMember(
+            .ForPath(
                 dest => dest.Common.StartOnBoot,
                 opt => opt.MapFrom(src => src.StartOnBoot))
-
+                
             // Convert DownloadPath (string) to a List<string> for BackgroundWorker.DownloadPath
-            .ForMember(
+            .ForPath(
                 dest => dest.BackgroundWorker.DownloadPath,
                 opt => opt.MapFrom(src =>
                     string.IsNullOrWhiteSpace(src.DownloadPath)
                         ? new List<string>()
                         : new List<string> { src.DownloadPath }))
-
+                
             // TexToolPath -> BackgroundWorker.TexToolPath
-            .ForMember(
+            .ForPath(
                 dest => dest.BackgroundWorker.TexToolPath,
                 opt => opt.MapFrom(src => src.TexToolPath))
-
+                
             // AdvancedOptions.PenumbraTimeOutInSeconds -> AdvancedConfigurationModel.PenumbraTimeOutInSeconds
             .ForPath(
                 dest => dest.AdvancedOptions.PenumbraTimeOutInSeconds,
