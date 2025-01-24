@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using AutoMapper;
 using KellermanSoftware.CompareNetObjects;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -15,19 +16,71 @@ public class ConfigurationService : IConfigurationService
     private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
     private readonly IFileStorage _fileStorage;
+    private readonly IMapper _mapper;  // Inject AutoMapper
     private ConfigurationModel _config;
-    private readonly object _configWriteLock = new object();
-
+    private readonly object _configWriteLock = new();
+        
     public event EventHandler<ConfigurationChangedEventArgs>? ConfigurationChanged;
 
-    public ConfigurationService(IFileStorage fileStorage)
+    public ConfigurationService(IFileStorage fileStorage, IMapper mapper)
     {
         _fileStorage = fileStorage;
-        LoadConfiguration();
+        _mapper = mapper;
+        LoadConfiguration();   // Load (and migrate if needed)
+    }
+
+    /// <summary>
+    /// Checks if the old config.json exists. If it does, it converts it
+    /// into the new ConfigurationModel format and saves to config-v3.json.
+    /// </summary>
+    private void MigrateLegacyConfigurationIfNeeded()
+    {
+        var legacyFilePath = $"{ConfigurationConsts.ConfigurationPath}\\config.json";
+        var newFilePath = ConfigurationConsts.ConfigurationFilePath;
+
+        if (_fileStorage.Exists(legacyFilePath) && !_fileStorage.Exists(newFilePath))
+        {
+            try
+            {
+                _logger.Info(
+                    "Old configuration detected at {LegacyFilePath}. Migrating to new configuration format...",
+                    legacyFilePath
+                );
+
+                // Read old config file
+                using var stream = _fileStorage.OpenRead(legacyFilePath);
+                using var reader = new StreamReader(stream);
+                var oldConfigJson = reader.ReadToEnd();
+
+                // Deserialize old config
+                var oldConfig = JsonConvert.DeserializeObject<OldConfigModel.OldConfigurationModel>(oldConfigJson);
+
+                if (oldConfig != null)
+                {
+                    // Map the old config to the new config using AutoMapper
+                    var newConfig = _mapper.Map<ConfigurationModel>(oldConfig);
+
+                    // Save the newly mapped config to config-v3.json
+                    SaveConfiguration(newConfig, detectChangesAndInvokeEvents: false);
+
+                    _logger.Info("Migration from old config.json to config-v3.json successfully completed.");
+                }
+                else
+                {
+                    _logger.Warn("Could not deserialize old configuration. Creating new default config.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Error migrating old configuration to new configuration format.");
+            }
+        }
     }
 
     private void LoadConfiguration()
     {
+        MigrateLegacyConfigurationIfNeeded();
+
         if (_fileStorage.Exists(ConfigurationConsts.ConfigurationFilePath))
         {
             try
@@ -35,6 +88,7 @@ public class ConfigurationService : IConfigurationService
                 using var stream = _fileStorage.OpenRead(ConfigurationConsts.ConfigurationFilePath);
                 using var reader = new StreamReader(stream);
                 var configContent = reader.ReadToEnd();
+
                 _config = JsonConvert.DeserializeObject<ConfigurationModel>(configContent)
                           ?? new ConfigurationModel();
             }
@@ -184,7 +238,7 @@ public class ConfigurationService : IConfigurationService
             {
                 if (newValue is JArray jArrayValue)
                 {
-                    // Convert JArray to either List<string>, string[], or any other collection
+                    // Handle JArray -> List<string> or string[]
                     if (propertyInfo.PropertyType == typeof(List<string>))
                     {
                         var typedList = jArrayValue.ToObject<List<string>>();
@@ -218,7 +272,6 @@ public class ConfigurationService : IConfigurationService
     private Dictionary<string, object> GetChanges(ConfigurationModel original, ConfigurationModel updated)
     {
         var changes = new Dictionary<string, object>();
-
         var compareLogic = new CompareLogic
         {
             Config =
