@@ -1,4 +1,5 @@
 ﻿using MessagePack;
+using PenumbraModForwarder.Common.Enums;
 
 namespace PenumbraModForwarder.Common.Models;
 
@@ -19,4 +20,7 @@ public class XmaMods
 
     [Key(4)]
     public string ModUrl { get; set; } = string.Empty;
+    
+    [Key(5)]
+    public XmaGender Gender { get; set; } = XmaGender.Unisex;
 }

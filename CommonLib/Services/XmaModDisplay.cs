@@ -1,8 +1,10 @@
 ﻿using System.Net;
+using System.Text.RegularExpressions;
 using HtmlAgilityPack;
 using MessagePack;
 using NLog;
 using PenumbraModForwarder.Common.Consts;
+using PenumbraModForwarder.Common.Enums;
 using PenumbraModForwarder.Common.Interfaces;
 using PenumbraModForwarder.Common.Models;
 
@@ -38,8 +40,10 @@ public class XmaModDisplay : IXmaModDisplay
         var cachedData = LoadCacheFromFile();
         if (cachedData != null && cachedData.ExpirationTime > DateTimeOffset.Now)
         {
-            _logger.Debug("Returning persisted cache. Valid until {ExpirationTime}.",
-                cachedData.ExpirationTime.ToString("u"));
+            _logger.Debug(
+                "Returning persisted cache. Valid until {ExpirationTime}.",
+                cachedData.ExpirationTime.ToString("u")
+            );
             return cachedData.Mods;
         }
 
@@ -68,12 +72,14 @@ public class XmaModDisplay : IXmaModDisplay
     }
 
     /// <summary>
-    /// Parses a single page of mod results.
+    /// Parses a single search-results page from XIV Mod Archive.
+    /// This function extracts the mod name, publisher, type, image URL, direct link, and the gender
     /// </summary>
+    /// <param name="pageNumber">Which page number to fetch (1, 2, etc.).</param>
+    /// <returns>A list of parsed XmaMods.</returns>
     private async Task<List<XmaMods>> ParsePageAsync(int pageNumber)
     {
-        string url =
-            $"https://www.xivmodarchive.com/search?sortby=time_published&sortorder=desc&dt_compat=1&page={pageNumber}";
+        var url = $"https://www.xivmodarchive.com/search?sortby=time_published&sortorder=desc&dt_compat=1&page={pageNumber}";
         const string domain = "https://www.xivmodarchive.com";
 
         using var client = new HttpClient();
@@ -83,48 +89,83 @@ public class XmaModDisplay : IXmaModDisplay
         doc.LoadHtml(html);
 
         var results = new List<XmaMods>();
+
+        // Look for <div class="mod-card"> that might contain the data, including Genders.
         var modCards = doc.DocumentNode.SelectNodes("//div[contains(@class, 'mod-card')]");
-        if (modCards == null) return results;
+        if (modCards == null)
+        {
+            _logger.Debug("No mod-card blocks found for page {PageNumber}.", pageNumber);
+            return results;
+        }
 
         foreach (var modCard in modCards)
         {
+            // The detail link is often in an anchor child of the card
             var linkNode = modCard.SelectSingleNode(".//a[@href]");
-            var linkAttr = linkNode?.GetAttributeValue("href", "");
+            var linkAttr = linkNode?.GetAttributeValue("href", "") ?? "";
             var fullLink = string.IsNullOrWhiteSpace(linkAttr) ? "" : domain + linkAttr;
 
-            var nameNode = modCard.SelectSingleNode(".//h5[contains(@class, 'card-title')]");
+            // The mod name is usually found in <h5 class="card-title"> or similar
+            var nameNode = modCard.SelectSingleNode(".//h5[contains(@class,'card-title')]");
             var rawName = nameNode?.InnerText?.Trim() ?? "";
             var normalizedName = NormalizeModName(rawName);
 
-            var publisherNode = modCard.SelectSingleNode(
-                ".//p[contains(@class, 'card-text')]/a[@href]"
-            );
+            // The publisher text (e.g., "By: SomeName") is typically in:
+            // <p class="card-text mx-2">By: <a href="/user/...">Publisher</a></p>
+            var publisherNode = modCard.SelectSingleNode(".//p[contains(@class,'card-text')]/a[@href]");
             var publisherText = publisherNode?.InnerText?.Trim() ?? "";
 
-            var typeNode = modCard.SelectNodes(".//code[contains(@class, 'text-light')]")
-                ?.FirstOrDefault(n => n.InnerText.Trim().StartsWith("Type:"));
-            var typeText = typeNode?.InnerText.Replace("Type:", "").Trim() ?? "";
+            // The 'Type' and 'Genders' appear in <code class="text-light"> lines
+            var infoNodes = modCard.SelectNodes(".//code[contains(@class, 'text-light')]");
+            var typeText = "";
+            var genderText = "";
 
+            if (infoNodes != null)
+            {
+                foreach (var node in infoNodes)
+                {
+                    var text = node.InnerText.Trim();
+                    if (text.StartsWith("Type:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        typeText = text.Replace("Type:", "").Trim();
+                    }
+                    else if (text.StartsWith("Genders:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        genderText = text.Replace("Genders:", "").Trim().ToLowerInvariant();
+                    }
+                }
+            }
+
+            // Determine the gender based on the text
+            var genderVal = XmaGender.Unisex;
+            if (genderText.Contains("male"))
+                genderVal = XmaGender.Male;
+            else if (genderText.Contains("female"))
+                genderVal = XmaGender.Female;
+
+            // The image is the 'card-img-top' <img> node
             var imgNode = modCard.SelectSingleNode(".//img[contains(@class, 'card-img-top')]");
             var imgUrl = imgNode?.GetAttributeValue("src", "") ?? "";
 
-            _logger.Debug("Mod parsed: Name={Name}, ImageUrl={ImageUrl}", normalizedName, imgUrl);
-
-            // Skip mods with missing image URL
+            // Skip if no image is found, or if there's no link
             if (string.IsNullOrWhiteSpace(imgUrl))
             {
-                _logger.Warn("Mod skipped due to missing image URL: Name={Name}", normalizedName);
+                _logger.Warn("Skipping mod due to missing image URL, Name={Name}", normalizedName);
                 continue;
             }
 
-            results.Add(new XmaMods
+            // Build final object
+            var mod = new XmaMods
             {
                 Name = normalizedName,
                 Publisher = publisherText,
                 Type = typeText,
                 ImageUrl = imgUrl,
-                ModUrl = fullLink
-            });
+                ModUrl = fullLink,
+                Gender = genderVal
+            };
+
+            results.Add(mod);
         }
 
         return results;
@@ -149,7 +190,6 @@ public class XmaModDisplay : IXmaModDisplay
             var doc = new HtmlDocument();
             doc.LoadHtml(html);
 
-            // Look for the download button anchor with id = "mod-download-link"
             var downloadNode = doc.DocumentNode.SelectSingleNode("//a[@id='mod-download-link']");
             if (downloadNode == null)
             {
@@ -157,7 +197,6 @@ public class XmaModDisplay : IXmaModDisplay
                 return null;
             }
 
-            // Extract the href
             var hrefValue = downloadNode.GetAttributeValue("href", "");
             if (string.IsNullOrWhiteSpace(hrefValue))
             {
@@ -165,17 +204,17 @@ public class XmaModDisplay : IXmaModDisplay
                 return null;
             }
 
-            // 1) Decode HTML entities (so &#39; => ')
+            // Decode HTML entities (e.g. &#39; => ')
             hrefValue = WebUtility.HtmlDecode(hrefValue);
 
             // If the URL is relative, prepend the domain
             if (hrefValue.StartsWith("/"))
                 hrefValue = domain + hrefValue;
 
-            // 2) Unescape existing percent-encoded sequences (so %2520 => %20)
+            // Unescape existing percent-encoded sequences (e.g. %2520 => %20)
             hrefValue = Uri.UnescapeDataString(hrefValue);
 
-            // 3) Manually encode any remaining literal spaces and apostrophes
+            // Manually encode any remaining literal spaces/apostrophes
             hrefValue = hrefValue
                 .Replace(" ", "%20")
                 .Replace("'", "%27");
@@ -191,7 +230,8 @@ public class XmaModDisplay : IXmaModDisplay
 
     /// <summary>
     /// Normalizes mod names to ensure compatibility with Avalonia.
-    /// Decodes HTML-encoded characters, removes non-ASCII characters, trims whitespace, and replaces problematic characters.
+    /// Decodes HTML-encoded characters, removes non-ASCII characters,
+    /// trims whitespace, and replaces problematic characters.
     /// </summary>
     private string NormalizeModName(string name)
     {
@@ -202,7 +242,7 @@ public class XmaModDisplay : IXmaModDisplay
             .Replace("\\r", " ")
             .Replace("\\t", " ");
 
-        var normalized = System.Text.RegularExpressions.Regex
+        var normalized = Regex
             .Replace(sanitized, "\\s+", " ")
             .Trim();
 
