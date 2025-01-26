@@ -138,10 +138,14 @@ public class XmaModDisplay : IXmaModDisplay
 
             // Determine the gender based on the text
             var genderVal = XmaGender.Unisex;
-            if (genderText.Contains("male"))
-                genderVal = XmaGender.Male;
-            else if (genderText.Contains("female"))
+            if (string.Equals(genderText, "male", StringComparison.OrdinalIgnoreCase))
+            {
+                genderVal = XmaGender.Male; 
+                
+            } else if (string.Equals(genderText, "female", StringComparison.OrdinalIgnoreCase))
+            {
                 genderVal = XmaGender.Female;
+            }
 
             // The image is the 'card-img-top' <img> node
             var imgNode = modCard.SelectSingleNode(".//img[contains(@class, 'card-img-top')]");
