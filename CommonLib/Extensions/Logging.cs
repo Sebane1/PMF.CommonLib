@@ -14,6 +14,10 @@ public static class Logging
 {
     private static LoggingConfiguration CreateBaseConfiguration(string applicationName)
     {
+        // Create a daily subfolder named "yyyy-MM-dd" underneath the logs path.
+        var dailyFolder = Path.Combine(ConfigurationConsts.LogsPath, DateTimeOffset.UtcNow.ToString("yyyy-MM-dd"));
+        Directory.CreateDirectory(dailyFolder);
+
         var config = new LoggingConfiguration();
 
         var consoleTarget = new ConsoleTarget("console")
@@ -29,10 +33,11 @@ public static class Logging
             config.AddRule(LogLevel.Info, LogLevel.Warn, consoleTarget);
 #endif
 
+        // Configure the file target to store logs in the daily folder
         var fileTarget = new FileTarget("file")
         {
-            FileName = Path.Combine(ConfigurationConsts.LogsPath, $"{applicationName}.log"),
-            ArchiveFileName = Path.Combine(ConfigurationConsts.LogsPath, $"{applicationName}.{{#}}.log"),
+            FileName = Path.Combine(dailyFolder, $"{applicationName}.log"),
+            ArchiveFileName = Path.Combine(dailyFolder, $"{applicationName}.{{#}}.log"),
             ArchiveNumbering = ArchiveNumberingMode.Rolling,
             ArchiveEvery = FileArchivePeriod.Day,
             MaxArchiveFiles = 7,
