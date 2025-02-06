@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using NLog;
 using NLog.Config;
+using Sentry.NLog;
 
 namespace PenumbraModForwarder.Common.Extensions;
 
@@ -39,5 +40,36 @@ public static class MergedSentryLogging
         LogManager.ReconfigExistingLoggers();
 
         Console.WriteLine("Sentry logging merged successfully.");
+    }
+    
+    public static void DisableSentryLogging()
+    {
+        var config = LogManager.Configuration;
+        if (config == null)
+        {
+            Console.WriteLine("No active NLog configuration found.");
+            return;
+        }
+        
+        if (config.AllTargets.FirstOrDefault(t => t is SentryTarget) is not SentryTarget sentryTarget)
+        {
+            Console.WriteLine("No Sentry target found in the NLog configuration.");
+            return;
+        }
+        
+        var rulesToRemove = config.LoggingRules
+            .Where(r => r.Targets.Contains(sentryTarget))
+            .ToList();
+        foreach (var rule in rulesToRemove)
+        {
+            config.LoggingRules.Remove(rule);
+        }
+        
+        config.RemoveTarget(sentryTarget.Name);
+        
+        LogManager.Configuration = config;
+        LogManager.ReconfigExistingLoggers();
+
+        Console.WriteLine("Sentry logging disabled.");
     }
 }
