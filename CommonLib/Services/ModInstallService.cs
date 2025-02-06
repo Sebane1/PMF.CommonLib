@@ -3,6 +3,7 @@ using System.Text;
 using NLog;
 using Newtonsoft.Json;
 using PenumbraModForwarder.Common.Exceptions;
+using PenumbraModForwarder.Common.Extensions;
 using PenumbraModForwarder.Common.Interfaces;
 using PenumbraModForwarder.Common.Models;
 
@@ -168,14 +169,17 @@ public class ModInstallService : IModInstallService
             if (File.Exists(convertedFilePath))
             {
                 _logger.Info("Converted file successfully created at: {Path}", convertedFilePath);
+                if (!IgnoreList.IgnoreListStrings.Contains(convertedFilePath, StringComparer.InvariantCultureIgnoreCase))
+                {
+                    IgnoreList.IgnoreListStrings.Add(convertedFilePath);
+                    _logger.Info("File: {Path} added to ignore list", convertedFilePath);
+                }
                 CleanupOriginalIfNeeded(originalPath);
                 return convertedFilePath;
             }
-            else
-            {
-                _logger.Warn("No converted file found at: {Path}; using original path.", convertedFilePath);
-                return originalPath;
-            }
+
+            _logger.Warn("No converted file found at: {Path}; using original path.", convertedFilePath);
+            return originalPath;
         }
     }
 
