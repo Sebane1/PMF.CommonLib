@@ -63,44 +63,4 @@ public static class Logging
             builder.AddNLog();
         });
     }
-
-    public static void EnableSentry(string sentryDsn, string applicationName)
-    {
-        if (string.IsNullOrWhiteSpace(sentryDsn))
-        {
-            Console.WriteLine("Sentry DSN not provided. Skipping Sentry enablement.");
-            return;
-        }
-
-        var assembly = Assembly.GetExecutingAssembly();
-        var version = assembly.GetName().Version;
-        var semVersion = version == null
-            ? "Local Build"
-            : $"{version.Major}.{version.Minor}.{version.Build}";
-
-        var config = CreateBaseConfiguration(applicationName);
-
-        config.AddSentry(options =>
-        {
-            options.Dsn = sentryDsn;
-            options.Layout = "${message}";
-            options.BreadcrumbLayout = "${logger}: ${message}";
-            options.MinimumBreadcrumbLevel = LogLevel.Debug;
-            options.MinimumEventLevel = LogLevel.Error;
-            options.AddTag("logger", "${logger}");
-            options.Release = semVersion;
-            // Keep exception details
-            options.AttachStacktrace = true;
-        });
-
-        LogManager.Configuration = config;
-        Console.WriteLine("Sentry is now enabled at runtime.");
-    }
-
-    public static void DisableSentry(string applicationName)
-    {
-        var config = CreateBaseConfiguration(applicationName);
-        LogManager.Configuration = config;
-        Console.WriteLine("Sentry has been disabled and removed from the logger.");
-    }
 }
