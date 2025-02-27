@@ -13,13 +13,18 @@ public class FileStorage : IFileStorage
     {
         if (!File.Exists(path))
         {
-            throw new FileNotFoundException($"The file at path '{path}' does not exist.");
+            throw new FileNotFoundException($"The file at path '{path}' does not exist.", path);
         }
         return File.ReadAllText(path);
     }
 
     public void Write(string path, string content)
     {
+        var directoryPath = Path.GetDirectoryName(path);
+        if (!Directory.Exists(directoryPath))
+        {
+            Directory.CreateDirectory(directoryPath);
+        }
         File.WriteAllText(path, content);
     }
 
@@ -33,7 +38,7 @@ public class FileStorage : IFileStorage
 
     public void WriteAllText(string path, string content)
     {
-        File.WriteAllText(path, content);
+        Write(path, content);
     }
 
     public void Delete(string path)
@@ -54,6 +59,11 @@ public class FileStorage : IFileStorage
 
     public Stream CreateFile(string path)
     {
+        var directoryPath = Path.GetDirectoryName(path);
+        if (!Directory.Exists(directoryPath))
+        {
+            Directory.CreateDirectory(directoryPath);
+        }
         return new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
     }
 
@@ -61,22 +71,32 @@ public class FileStorage : IFileStorage
     {
         if (!File.Exists(sourcePath))
         {
-            throw new FileNotFoundException($"The source file at '{sourcePath}' does not exist.");
+            throw new FileNotFoundException($"The source file at '{sourcePath}' does not exist.", sourcePath);
+        }
+        var destinationDirectory = Path.GetDirectoryName(destinationPath);
+        if (!Directory.Exists(destinationDirectory))
+        {
+            Directory.CreateDirectory(destinationDirectory);
         }
         File.Copy(sourcePath, destinationPath, overwrite);
     }
-    
+
     public Stream OpenRead(string path)
     {
         if (!File.Exists(path))
         {
-            throw new FileNotFoundException($"The file at '{path}' does not exist.");
+            throw new FileNotFoundException($"The file at '{path}' does not exist.", path);
         }
         return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
     }
-    
-    public Stream OpenWrite(string path)  
-    {  
-        return new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);  
-    } 
+
+    public Stream OpenWrite(string path)
+    {
+        var directoryPath = Path.GetDirectoryName(path);
+        if (!Directory.Exists(directoryPath))
+        {
+            Directory.CreateDirectory(directoryPath);
+        }
+        return new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
+    }
 }
