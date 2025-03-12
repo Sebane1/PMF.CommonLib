@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text;
-using NLog;
 using Newtonsoft.Json;
+using NLog;
 using PenumbraModForwarder.Common.Exceptions;
 using PenumbraModForwarder.Common.Extensions;
 using PenumbraModForwarder.Common.Interfaces;
@@ -47,7 +47,14 @@ public class ModInstallService : IModInstallService
                 var installedFolderPath = _penumbraService.InstallMod(finalPath);
 
                 var modName = Path.GetFileName(installedFolderPath);
-                await ReloadModAsync(installedFolderPath, modName);
+                try
+                {
+                    await ReloadModAsync(installedFolderPath, modName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warn(ex, "ReloadModAsync failed for folder '{ModFolder}' with mod name '{ModName}'. This error is non-fatal.", installedFolderPath, modName);
+                }
 
                 var fileName = Path.GetFileName(finalPath);
                 await _statisticService.RecordModInstallationAsync(fileName);

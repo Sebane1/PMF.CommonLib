@@ -36,10 +36,7 @@ public class PenumbraService : IPenumbraService
         _configurationService = configurationService;
         _fileStorage = fileStorage;
     }
-
-    /// <summary>
-    /// If no path is already configured, attempts to locate and store the Penumbra mod directory.
-    /// </summary>
+    
     public void InitializePenumbraPath()
     {
         var existingPath = _configurationService.ReturnConfigValue(
@@ -62,11 +59,7 @@ public class PenumbraService : IPenumbraService
             _logger.Warn("Penumbra path could not be located with any known configuration.");
         }
     }
-
-    /// <summary>
-    /// Always treats the specified file as an archive. Extracts to a folder named after "meta.json" 'Name' if found,
-    /// otherwise uses the archive base name. Returns the final folder path where files are extracted.
-    /// </summary>
+    
     public string InstallMod(string sourceFilePath)
     {
         if (string.IsNullOrWhiteSpace(sourceFilePath))
@@ -84,70 +77,114 @@ public class PenumbraService : IPenumbraService
             _fileStorage.CreateDirectory(penumbraPath);
         }
 
-        using var archive = new ArchiveFile(sourceFilePath);
-
-        var metaEntry = archive.Entries.FirstOrDefault(
-            e => e?.FileName?.Equals("meta.json", StringComparison.OrdinalIgnoreCase) == true
-        );
-
+        // Process meta.json to determine destination folder name.
         var destinationFolderName = Path.GetFileNameWithoutExtension(sourceFilePath);
-
-        if (metaEntry != null)
+        using (var archiveForMeta = new ArchiveFile(sourceFilePath))
         {
-            // Extract only meta.json to a temp file
-            var tempMetaFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".json");
-            archive.Extract(entry =>
+            var metaEntry = archiveForMeta.Entries.FirstOrDefault(
+                e => e?.FileName?.Equals("meta.json", StringComparison.OrdinalIgnoreCase) == true
+            );
+
+            if (metaEntry != null)
             {
-                if (ReferenceEquals(entry, metaEntry))
-                    return tempMetaFilePath;
-
-                return null;
-            });
-
-            try
-            {
-                var metaContent = _fileStorage.Read(tempMetaFilePath);
-                var meta = JsonConvert.DeserializeObject<PmpMeta>(metaContent);
-
-                if (!string.IsNullOrWhiteSpace(meta?.Name))
+                // Extract only meta.json to a temporary file.
+                var tempMetaFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".json");
+                archiveForMeta.Extract(entry =>
                 {
-                    destinationFolderName = meta.Name;
+                    if (ReferenceEquals(entry, metaEntry))
+                        return tempMetaFilePath;
+                    return null;
+                });
+
+                try
+                {
+                    var metaContent = _fileStorage.Read(tempMetaFilePath);
+                    var meta = JsonConvert.DeserializeObject<PmpMeta>(metaContent);
+
+                    if (!string.IsNullOrWhiteSpace(meta?.Name))
+                    {
+                        destinationFolderName = meta.Name;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warn(ex, "Failed to parse meta.json in {SourceFile}; using default folder name.", sourceFilePath);
+                }
+                finally
+                {
+                    if (_fileStorage.Exists(tempMetaFilePath))
+                    {
+                        _fileStorage.Delete(tempMetaFilePath);
+                    }
                 }
             }
-            catch (Exception ex)
+            else
             {
-                _logger.Warn(ex, "Failed to parse meta.json in {SourceFile}; using default folder name.", sourceFilePath);
+                _logger.Warn("No meta.json found in {SourceFile}; using default folder name.", sourceFilePath);
             }
-            finally
-            {
-                if (_fileStorage.Exists(tempMetaFilePath))
-                {
-                    _fileStorage.Delete(tempMetaFilePath);
-                }
-            }
-        }
-        else
-        {
-            _logger.Warn("No meta.json found in {SourceFile}; using default folder name.", sourceFilePath);
         }
 
-        // Clean up invalid characters for the file system
+        // Clean up invalid characters for the file system.
         destinationFolderName = RemoveInvalidPathChars(destinationFolderName);
 
-        // Create final destination folder
+        // Create final destination folder.
         var destinationFolderPath = Path.Combine(penumbraPath, destinationFolderName);
         if (!_fileStorage.Exists(destinationFolderPath))
         {
             _fileStorage.CreateDirectory(destinationFolderPath);
         }
+        
+        var extractionSuccessful = false;
+        const int maxAttempts = 6;
+        var attempt = 0;
 
-        // Extract all contents to the final folder
-        archive.Extract(entry =>
+        while (attempt < maxAttempts && !extractionSuccessful)
         {
-            if (entry == null) return null;
-            var outFileName = Path.Combine(destinationFolderPath, entry.FileName ?? string.Empty);
-            return outFileName;
-        });
+            attempt++;
+            // If this is a retry, clear the destination folder before reattempting.
+            if (attempt > 1)
+            {
+                _logger.Info("Retrying extraction attempt {Attempt} for {SourceFile}", attempt, sourceFilePath);
+                ClearDirectory(destinationFolderPath);
+            }
+            
+            using (var archive = new ArchiveFile(sourceFilePath))
+            {
+                archive.Extract(entry =>
+                {
+                    if (entry == null)
+                        return null;
+                    return Path.Combine(destinationFolderPath, entry.FileName ?? string.Empty);
+                });
+            }
+
+            // Validate that the extracted files match exactly the archive contents.
+            using (var archive = new ArchiveFile(sourceFilePath))
+            {
+                var expectedFiles = archive.Entries
+                    .Where(e => e != null && !string.IsNullOrEmpty(e.FileName))
+                    .Select(e => Path.Combine(destinationFolderPath, e.FileName))
+                    .ToList();
+
+                // Check that each expected file exists.
+                var allFilesExtracted = expectedFiles.All(file => _fileStorage.Exists(file));
+
+                if (allFilesExtracted && expectedFiles.Count > 0)
+                {
+                    extractionSuccessful = true;
+                    break;
+                }
+                else
+                {
+                    _logger.Warn("Extraction attempt {Attempt} did not extract all expected files for {SourceFile}", attempt, sourceFilePath);
+                }
+            }
+        }
+
+        if (!extractionSuccessful)
+        {
+            throw new InvalidOperationException($"Failed to fully extract mod files from archive {sourceFilePath} after {maxAttempts} attempts.");
+        }
 
         // Optionally remove the original archive
         // _fileStorage.Delete(sourceFilePath);
@@ -193,5 +230,24 @@ public class PenumbraService : IPenumbraService
     {
         var invalidChars = Path.GetInvalidFileNameChars();
         return new string(text.Where(ch => !invalidChars.Contains(ch)).ToArray());
+    }
+    
+    private void ClearDirectory(string directoryPath)
+    {
+        try
+        {
+            var files = Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories);
+            foreach (var file in files)
+            {
+                if (_fileStorage.Exists(file))
+                {
+                    _fileStorage.Delete(file);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Warn(ex, "Failed to clear directory {DirectoryPath}", directoryPath);
+        }
     }
 }
