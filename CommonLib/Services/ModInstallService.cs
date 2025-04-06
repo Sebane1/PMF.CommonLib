@@ -208,7 +208,14 @@ public class ModInstallService : IModInstallService
             };
 
             process.Start();
+            var standardOutput = process.StandardOutput.ReadToEnd();
+            var errorOutput = process.StandardError.ReadToEnd();
             process.WaitForExit();
+
+            if (process.ExitCode != 0)
+            {
+                _logger.Error("Conversion process for file '{Path}' exited with code {ExitCode}. Standard output: {Output}, Error output: {ErrorOutput}", originalPath, process.ExitCode, standardOutput, errorOutput);
+            }
         }
         catch (Exception ex)
         {
