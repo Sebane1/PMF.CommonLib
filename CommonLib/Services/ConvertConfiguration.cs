@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
-using PenumbraModForwarder.Common.Models;
+using CommonLib.Models;
 
-namespace PenumbraModForwarder.Common.Services;
+namespace CommonLib.Services;
 
 /// <summary>
 /// A class for converting old configuration models into the new configuration models using AutoMapper.

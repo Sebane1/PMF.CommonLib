@@ -1,7 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using PenumbraModForwarder.Common.Attributes;
+using CommonLib.Attributes;
+using CommonLib.Consts;
 
-namespace PenumbraModForwarder.Common.Models;
+namespace CommonLib.Models;
 
 public class BackgroundWorkerConfigurationModel
 {
@@ -12,7 +13,7 @@ public class BackgroundWorkerConfigurationModel
     public bool InstallAll { get; set; }
 
     [Display(Name = "Mod Folder Path", GroupName = "Pathing", Description = "Where to move the mods to for processing")]
-    public string ModFolderPath { get; set; } = Consts.ConfigurationConsts.ModsPath;
+    public string ModFolderPath { get; set; } = ConfigurationConsts.ModsPath;
 
     [ExcludeFromSettingsUI] private List<string> _downloadPath = [];
     

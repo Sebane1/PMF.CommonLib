@@ -1,13 +1,13 @@
 ﻿using System.Diagnostics;
 using System.Text;
+using CommonLib.Exceptions;
+using CommonLib.Extensions;
+using CommonLib.Interfaces;
+using CommonLib.Models;
 using Newtonsoft.Json;
 using NLog;
-using PenumbraModForwarder.Common.Exceptions;
-using PenumbraModForwarder.Common.Extensions;
-using PenumbraModForwarder.Common.Interfaces;
-using PenumbraModForwarder.Common.Models;
 
-namespace PenumbraModForwarder.Common.Services;
+namespace CommonLib.Services;
 
 public class ModInstallService : IModInstallService
 {

@@ -1,4 +1,4 @@
-﻿namespace PenumbraModForwarder.Common.Interfaces;
+﻿namespace CommonLib.Interfaces;
 
 public interface IDownloadUpdater
 {

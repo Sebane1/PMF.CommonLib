@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using PenumbraModForwarder.Common.Attributes;
+using CommonLib.Attributes;
 
-namespace PenumbraModForwarder.Common.Models;
+namespace CommonLib.Models;
 
 public class CommonConfigurationModel
 {

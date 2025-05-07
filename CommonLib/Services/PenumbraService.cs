@@ -1,10 +1,11 @@
-﻿using Newtonsoft.Json;
+﻿using CommonLib.Interfaces;
+using CommonLib.Models;
+using Newtonsoft.Json;
 using NLog;
 using PenumbraModForwarder.Common.Interfaces;
-using PenumbraModForwarder.Common.Models;
 using SevenZipExtractor;
 
-namespace PenumbraModForwarder.Common.Services;
+namespace CommonLib.Services;
 
 public class PenumbraService : IPenumbraService
 {

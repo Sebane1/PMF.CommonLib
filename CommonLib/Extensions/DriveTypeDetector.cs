@@ -1,8 +1,8 @@
 ﻿using System.Management;
 using System.Runtime.InteropServices;
-using PenumbraModForwarder.Common.Enums;
+using CommonLib.Enums;
 
-namespace PenumbraModForwarder.Common.Extensions;
+namespace CommonLib.Extensions;
 
 public static class DriveTypeDetector
 {

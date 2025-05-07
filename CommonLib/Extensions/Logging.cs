@@ -1,14 +1,13 @@
-﻿using System.Reflection;
+﻿using CommonLib.Consts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NLog;
 using NLog.Config;
 using NLog.Extensions.Logging;
 using NLog.Targets;
-using PenumbraModForwarder.Common.Consts;
 using LogLevel = NLog.LogLevel;
 
-namespace PenumbraModForwarder.Common.Extensions;
+namespace CommonLib.Extensions;
 
 public static class Logging
 {

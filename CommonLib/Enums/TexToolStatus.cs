@@ -1,4 +1,4 @@
-﻿namespace PenumbraModForwarder.Common.Enums;
+﻿namespace CommonLib.Enums;
 
 public enum TexToolsStatus
 {

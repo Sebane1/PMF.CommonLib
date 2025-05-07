@@ -1,4 +1,4 @@
-﻿namespace PenumbraModForwarder.Common.Consts;
+﻿namespace CommonLib.Consts;
 
 public static class FileExtensionsConsts
 {

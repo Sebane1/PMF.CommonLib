@@ -1,6 +1,6 @@
-﻿using PenumbraModForwarder.Common.Models;
+﻿using CommonLib.Models;
 
-namespace PenumbraModForwarder.Common.Interfaces;
+namespace CommonLib.Interfaces;
 
 public interface IStaticResourceService
 {

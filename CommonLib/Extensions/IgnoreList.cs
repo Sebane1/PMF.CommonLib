@@ -1,4 +1,4 @@
-﻿namespace PenumbraModForwarder.Common.Extensions;
+﻿namespace CommonLib.Extensions;
 
 public static class IgnoreList
 {

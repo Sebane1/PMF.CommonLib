@@ -1,8 +1,9 @@
 ﻿using System.Net;
+using CommonLib.Interfaces;
 using NLog;
 using PenumbraModForwarder.Common.Interfaces;
 
-namespace PenumbraModForwarder.Common.Factory;
+namespace CommonLib.Factory;
 
 public class XmaHttpClientFactory : IXmaHttpClientFactory
 {

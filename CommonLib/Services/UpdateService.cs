@@ -1,10 +1,10 @@
 ﻿using System.Net.Http.Headers;
+using CommonLib.Extensions;
+using CommonLib.Interfaces;
 using Newtonsoft.Json;
 using NLog;
-using PenumbraModForwarder.Common.Extensions;
-using PenumbraModForwarder.Common.Interfaces;
 
-namespace PenumbraModForwarder.Common.Services;
+namespace CommonLib.Services;
 
 public class UpdateService : IUpdateService
 {

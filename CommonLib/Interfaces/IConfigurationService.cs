@@ -1,7 +1,7 @@
-﻿using PenumbraModForwarder.Common.Events;
-using PenumbraModForwarder.Common.Models;
+﻿using CommonLib.Events;
+using CommonLib.Models;
 
-namespace PenumbraModForwarder.Common.Interfaces;
+namespace CommonLib.Interfaces;
 
 public interface IConfigurationService
 {

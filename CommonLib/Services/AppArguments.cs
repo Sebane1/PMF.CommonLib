@@ -1,6 +1,6 @@
-﻿using PenumbraModForwarder.Common.Interfaces;
+﻿using CommonLib.Interfaces;
 
-namespace PenumbraModForwarder.Common.Services;
+namespace CommonLib.Services;
 
 public class AppArguments : IAppArguments
 {

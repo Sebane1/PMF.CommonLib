@@ -1,7 +1,7 @@
-﻿using MessagePack;
-using PenumbraModForwarder.Common.Enums;
+﻿using CommonLib.Enums;
+using MessagePack;
 
-namespace PenumbraModForwarder.Common.Models;
+namespace CommonLib.Models;
 
 [MessagePackObject]
 public class XmaMods

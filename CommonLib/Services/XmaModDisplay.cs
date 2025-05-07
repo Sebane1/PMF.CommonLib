@@ -1,14 +1,14 @@
 ﻿using System.Net;
 using System.Text.RegularExpressions;
+using CommonLib.Consts;
+using CommonLib.Enums;
+using CommonLib.Interfaces;
+using CommonLib.Models;
 using HtmlAgilityPack;
 using MessagePack;
 using NLog;
-using PenumbraModForwarder.Common.Consts;
-using PenumbraModForwarder.Common.Enums;
-using PenumbraModForwarder.Common.Interfaces;
-using PenumbraModForwarder.Common.Models;
 
-namespace PenumbraModForwarder.Common.Services;
+namespace CommonLib.Services;
 
 public class XmaModDisplay : IXmaModDisplay
 {

@@ -1,8 +1,8 @@
-﻿using NLog;
-using PenumbraModForwarder.Common.Interfaces;
+﻿using CommonLib.Interfaces;
+using NLog;
 using SevenZipExtractor;
 
-namespace PenumbraModForwarder.Common.Services;
+namespace CommonLib.Services;
 
 public class DownloadUpdater : IDownloadUpdater
 {

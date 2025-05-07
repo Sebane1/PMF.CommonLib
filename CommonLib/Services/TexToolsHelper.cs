@@ -1,8 +1,8 @@
-﻿using NLog;
-using PenumbraModForwarder.Common.Enums;
-using PenumbraModForwarder.Common.Interfaces;
+﻿using CommonLib.Enums;
+using CommonLib.Interfaces;
+using NLog;
 
-namespace PenumbraModForwarder.Common.Services;
+namespace CommonLib.Services;
 
 public class TexToolsHelper : ITexToolsHelper
 {

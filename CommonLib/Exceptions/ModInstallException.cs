@@ -1,4 +1,4 @@
-﻿namespace PenumbraModForwarder.Common.Exceptions;
+﻿namespace CommonLib.Exceptions;
 
 /// <summary>
 /// Represents errors that occur during mod installation.

@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace PenumbraModForwarder.Common.Models;
+namespace CommonLib.Models;
 
 public class PenumbraModPath
 {

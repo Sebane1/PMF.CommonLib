@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace PenumbraModForwarder.Common.Extensions;
+namespace CommonLib.Extensions;
 
 public static class HttpContextExtensions
 {

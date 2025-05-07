@@ -1,10 +1,9 @@
-﻿using System;
+﻿using CommonLib.Consts;
+using CommonLib.Interfaces;
 using Microsoft.Win32;
 using NLog;
-using PenumbraModForwarder.Common.Consts;
-using PenumbraModForwarder.Common.Interfaces;
 
-namespace PenumbraModForwarder.Common.Services
+namespace CommonLib.Services
 {
     public class RegistryHelper : IRegistryHelper
     {

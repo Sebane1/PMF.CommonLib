@@ -1,4 +1,4 @@
-﻿namespace PenumbraModForwarder.Common.Enums;
+﻿namespace CommonLib.Enums;
 
 /// <summary>
 /// The possible genders for an XMA mod.

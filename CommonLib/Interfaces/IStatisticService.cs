@@ -1,7 +1,7 @@
-﻿using PenumbraModForwarder.Common.Enums;
-using PenumbraModForwarder.Common.Models;
+﻿using CommonLib.Enums;
+using CommonLib.Models;
 
-namespace PenumbraModForwarder.Common.Interfaces;
+namespace CommonLib.Interfaces;
 
 public interface IStatisticService
 { 

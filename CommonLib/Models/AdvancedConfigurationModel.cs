@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace PenumbraModForwarder.Common.Models;
+namespace CommonLib.Models;
 
 public class AdvancedConfigurationModel
 {

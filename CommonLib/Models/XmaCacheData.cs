@@ -1,6 +1,6 @@
 ﻿using MessagePack;
 
-namespace PenumbraModForwarder.Common.Models;
+namespace CommonLib.Models;
 
 [MessagePackObject(AllowPrivate = true)]
 internal class XmaCacheData

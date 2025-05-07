@@ -1,4 +1,4 @@
-﻿using PenumbraModForwarder.Common.Enums;
+﻿using CommonLib.Enums;
 
 namespace PenumbraModForwarder.Common.Interfaces;
 

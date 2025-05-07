@@ -1,15 +1,15 @@
 ﻿using System.Reflection;
 using AutoMapper;
+using CommonLib.Consts;
+using CommonLib.Events;
+using CommonLib.Interfaces;
+using CommonLib.Models;
 using KellermanSoftware.CompareNetObjects;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog;
-using PenumbraModForwarder.Common.Consts;
-using PenumbraModForwarder.Common.Events;
-using PenumbraModForwarder.Common.Interfaces;
-using PenumbraModForwarder.Common.Models;
 
-namespace PenumbraModForwarder.Common.Services;
+namespace CommonLib.Services;
 
 public class ConfigurationService : IConfigurationService
 {

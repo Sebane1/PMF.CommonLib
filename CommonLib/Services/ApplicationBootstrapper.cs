@@ -1,4 +1,4 @@
-﻿namespace PenumbraModForwarder.Common.Services;
+﻿namespace CommonLib.Services;
 
 public static class ApplicationBootstrapper
 {

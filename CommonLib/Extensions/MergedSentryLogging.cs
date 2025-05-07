@@ -3,7 +3,7 @@ using NLog;
 using NLog.Config;
 using Sentry.NLog;
 
-namespace PenumbraModForwarder.Common.Extensions;
+namespace CommonLib.Extensions;
 
 public static class MergedSentryLogging
 {

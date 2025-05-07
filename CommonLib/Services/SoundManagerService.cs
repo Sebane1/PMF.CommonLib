@@ -1,11 +1,12 @@
 ﻿using System.Reflection;
+using CommonLib.Enums;
+using CommonLib.Interfaces;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using NLog;
-using PenumbraModForwarder.Common.Enums;
 using PenumbraModForwarder.Common.Interfaces;
 
-namespace PenumbraModForwarder.Common.Services;
+namespace CommonLib.Services;
 
 public class SoundManagerService : ISoundManagerService
 {

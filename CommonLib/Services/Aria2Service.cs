@@ -1,14 +1,14 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using CommonLib.Enums;
+using CommonLib.Extensions;
+using CommonLib.Interfaces;
 using Newtonsoft.Json.Linq;
 using NLog;
-using PenumbraModForwarder.Common.Enums;
-using PenumbraModForwarder.Common.Extensions;
-using PenumbraModForwarder.Common.Interfaces;
 using SevenZipExtractor;
 
-namespace PenumbraModForwarder.Common.Services;
+namespace CommonLib.Services;
 
 public class Aria2Service : IAria2Service
 {

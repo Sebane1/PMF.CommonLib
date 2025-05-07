@@ -1,4 +1,4 @@
-﻿namespace PenumbraModForwarder.Common.Events;
+﻿namespace CommonLib.Events;
 
 public class MultipleEntriesEventArgs : EventArgs
 {

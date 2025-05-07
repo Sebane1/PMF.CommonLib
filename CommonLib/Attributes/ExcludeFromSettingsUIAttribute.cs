@@ -1,4 +1,4 @@
-﻿namespace PenumbraModForwarder.Common.Attributes;
+﻿namespace CommonLib.Attributes;
 
 public class ExcludeFromSettingsUIAttribute : Attribute
 {

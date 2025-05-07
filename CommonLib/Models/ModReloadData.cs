@@ -1,4 +1,4 @@
-﻿namespace PenumbraModForwarder.Common.Models;
+﻿namespace CommonLib.Models;
 
 public record ModReloadData(string Path, string Name)
 {

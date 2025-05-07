@@ -1,4 +1,4 @@
-﻿namespace PenumbraModForwarder.Common.Models;
+﻿namespace CommonLib.Models;
 
 public record ModInstallData(string Path)
 {

@@ -1,6 +1,6 @@
-﻿using PenumbraModForwarder.Common.Services;
+﻿using CommonLib.Services;
 
-namespace PenumbraModForwarder.Common.Interfaces;
+namespace CommonLib.Interfaces;
 
 public interface IUpdateService
 {

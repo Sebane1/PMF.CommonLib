@@ -1,9 +1,9 @@
 ﻿using System.Runtime.InteropServices;
+using CommonLib.Interfaces;
 using NLog;
-using PenumbraModForwarder.Common.Interfaces;
 using SevenZipExtractor;
 
-namespace PenumbraModForwarder.Common.Services;
+namespace CommonLib.Services;
 
 public class DownloadAndInstallUpdates : IDownloadAndInstallUpdates
 {
