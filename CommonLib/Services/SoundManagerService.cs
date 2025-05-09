@@ -4,7 +4,6 @@ using CommonLib.Interfaces;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using NLog;
-using PenumbraModForwarder.Common.Interfaces;
 
 namespace CommonLib.Services;
 

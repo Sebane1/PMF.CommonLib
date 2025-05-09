@@ -1,6 +1,6 @@
 ﻿using CommonLib.Enums;
 
-namespace PenumbraModForwarder.Common.Interfaces;
+namespace CommonLib.Interfaces;
 
 public interface ISoundManagerService
 {

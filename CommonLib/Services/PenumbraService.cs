@@ -2,7 +2,6 @@
 using CommonLib.Models;
 using Newtonsoft.Json;
 using NLog;
-using PenumbraModForwarder.Common.Interfaces;
 using SevenZipExtractor;
 
 namespace CommonLib.Services;

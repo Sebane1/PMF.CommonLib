@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using CommonLib.Interfaces;
 using NLog;
-using PenumbraModForwarder.Common.Interfaces;
 
 namespace CommonLib.Factory;
 
