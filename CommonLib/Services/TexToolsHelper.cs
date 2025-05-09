@@ -287,11 +287,11 @@ public class TexToolsHelper : ITexToolsHelper
         }
         catch (UnauthorizedAccessException uae)
         {
-            _logger.Error($"Access denied to directory {dir}: {uae.Message}");
+            _logger.Warn($"Access denied to directory {dir}: {uae.Message}");
         }
         catch (PathTooLongException ptle)
         {
-            _logger.Error($"Path too long {dir}: {ptle.Message}");
+            _logger.Warn($"Path too long {dir}: {ptle.Message}");
         }
         catch (IOException ioex)
         {
