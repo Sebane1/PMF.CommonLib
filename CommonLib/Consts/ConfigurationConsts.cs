@@ -22,16 +22,20 @@ public static class ConfigurationConsts
     /// This is so we can do nice cleanups and users will have a spot to find all mods that have been downloaded
     /// Maybe have a history.json as well?
     /// </summary>
-    public static readonly string ModsPath = @"\mods\";
+    public static readonly string ModsPath = BaseDirectory + @"\mods\";
     
     /// <summary>
     /// The folder location where logs will be found
     /// </summary>
-    public static readonly string LogsPath = @"\logs\";
+    public static readonly string LogsPath = BaseDirectory + @"\logs\";
+    
+    public static readonly string DatabasePath = BaseDirectory + @"\database\";
+    
+    public static readonly string FileWatcherState = BaseDirectory + @"\state\";
     
     /// <summary>
     /// The user should never be able to set what this is
     /// This is where we cache the mods for the homeview
     /// </summary>
-    internal static readonly string CachePath = @"\cache\";
+    internal static readonly string CachePath = BaseDirectory + @"\cache\";
 }
