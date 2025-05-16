@@ -15,7 +15,7 @@ public static class ConfigurationConsts
     /// Example:
     ///     Download Path - Where downloads will be found
     /// </summary>
-    public static readonly string ConfigurationFilePath = @"\config-v3.json"; // Change this to @"\config.json" when ready for prod
+    public static readonly string ConfigurationFilePath = BaseDirectory + @"\config-v3.json"; // Change this to @"\config.json" when ready for prod
     
     /// <summary>
     /// The folder location where mods will be moved to after found inside the download folder
