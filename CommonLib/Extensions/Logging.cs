@@ -37,7 +37,6 @@ public static class Logging
         {
             FileName = Path.Combine(dailyFolder, $"{applicationName}.log"),
             ArchiveFileName = Path.Combine(dailyFolder, $"{applicationName}.{{#}}.log"),
-            ArchiveNumbering = ArchiveNumberingMode.Rolling,
             ArchiveEvery = FileArchivePeriod.Day,
             MaxArchiveFiles = 7,
             Layout = "[${longdate} ${level:uppercase=true}] [${logger}] ${message}${exception}"
