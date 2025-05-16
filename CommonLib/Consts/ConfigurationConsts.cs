@@ -2,10 +2,13 @@
 
 public static class ConfigurationConsts
 {
+    
+    private static readonly string BaseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+
     /// <summary>
     /// This is where everything will go, inside configuration files, extracted files, queue saves
     /// </summary>
-    public static readonly string ConfigurationPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\PenumbraModForwarder";
+    public static readonly string ConfigurationPath = BaseDirectory + @"\PenumbraModForwarder";
     
     /// <summary>
     /// This is where configuration options will be stored
