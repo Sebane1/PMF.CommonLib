@@ -35,7 +35,7 @@ public class ConfigurationService : IConfigurationService
     /// </summary>
     private void MigrateLegacyConfigurationIfNeeded()
     {
-        var legacyFilePath = $"{ConfigurationConsts.ConfigurationPath}\\config.json";
+        var legacyFilePath = $"{ConfigurationConsts.OldConfigPath}\\config.json";
         var newFilePath = ConfigurationConsts.ConfigurationFilePath;
 
         if (_fileStorage.Exists(legacyFilePath) && !_fileStorage.Exists(newFilePath))
