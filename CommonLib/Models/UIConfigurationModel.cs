@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using CommonLib.Attributes;
 
 namespace CommonLib.Models;
 
@@ -11,4 +12,9 @@ public class UIConfigurationModel
     public bool NotificationSoundEnabled { get; set; } 
     [Display(Name = "Minimise To Tray", GroupName = "User Interface", Description = "Minimise the Main Window to tray")]
     public bool MinimiseToTray { get; set; } = false;
+    [ExcludeFromSettingsUI]
+    public double NotificationButtonX { get; set; } = 20;
+    [ExcludeFromSettingsUI]
+    public double NotificationButtonY { get; set; } = 60;
+
 }
