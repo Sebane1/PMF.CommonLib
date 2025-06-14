@@ -175,6 +175,7 @@ public class UpdateService : IUpdateService
         return latestRelease;
     }
 
+
     private bool IsVersionGreater(string newVersion, string oldVersion)
     {
         _logger.Debug("`IsVersionGreater` check. New: {NewVersion}, Old: {OldVersion}", newVersion, oldVersion);
@@ -185,12 +186,23 @@ public class UpdateService : IUpdateService
             return false;
         }
 
-        var splittedNew = newVersion.Split('.');
-        var splittedOld = oldVersion.Split('.');
+        // Remove 'v' prefix if present
+        var cleanNewVersion = newVersion.StartsWith("v", StringComparison.OrdinalIgnoreCase) 
+            ? newVersion.Substring(1) 
+            : newVersion;
+        var cleanOldVersion = oldVersion.StartsWith("v", StringComparison.OrdinalIgnoreCase) 
+            ? oldVersion.Substring(1) 
+            : oldVersion;
+
+        _logger.Debug("Cleaned versions. New: {CleanNewVersion}, Old: {CleanOldVersion}", cleanNewVersion, cleanOldVersion);
+
+        var splittedNew = cleanNewVersion.Split('.');
+        var splittedOld = cleanOldVersion.Split('.');
+        
         if (splittedNew.Length != 3 || splittedOld.Length != 3)
         {
             _logger.Debug("Version not in x.x.x format. Using ordinal compare.");
-            return string.CompareOrdinal(newVersion, oldVersion) > 0;
+            return string.CompareOrdinal(cleanNewVersion, cleanOldVersion) > 0;
         }
 
         if (!int.TryParse(splittedNew[0], out var majorNew) ||
@@ -198,7 +210,7 @@ public class UpdateService : IUpdateService
             !int.TryParse(splittedNew[2], out var patchNew))
         {
             _logger.Debug("Error parsing newVersion to integers. Using ordinal compare.");
-            return string.CompareOrdinal(newVersion, oldVersion) > 0;
+            return string.CompareOrdinal(cleanNewVersion, cleanOldVersion) > 0;
         }
 
         if (!int.TryParse(splittedOld[0], out var majorOld) ||
@@ -206,7 +218,7 @@ public class UpdateService : IUpdateService
             !int.TryParse(splittedOld[2], out var patchOld))
         {
             _logger.Debug("Error parsing oldVersion to integers. Using ordinal compare.");
-            return string.CompareOrdinal(newVersion, oldVersion) > 0;
+            return string.CompareOrdinal(cleanNewVersion, cleanOldVersion) > 0;
         }
 
         if (majorNew > majorOld) return true;
