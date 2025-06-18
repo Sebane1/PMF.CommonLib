@@ -40,7 +40,10 @@ public class WebSocketMessage
     [JsonProperty("client_id")]
     public string ClientId { get; set; }
 
-    public static WebSocketMessage CreateProgress(string taskId, int progress, string message)
+    [JsonProperty("title")]
+    public string Title { get; set; } = "General";
+
+    public static WebSocketMessage CreateProgress(string taskId, int progress, string message, string title = null)
     {
         return new WebSocketMessage
         {
@@ -48,11 +51,12 @@ public class WebSocketMessage
             TaskId = taskId,
             Status = WebSocketMessageStatus.InProgress,
             Progress = progress,
-            Message = message
+            Message = message,
+            Title = title ?? "General"
         };
     }
 
-    public static WebSocketMessage CreateError(string taskId, string errorMessage)
+    public static WebSocketMessage CreateError(string taskId, string errorMessage, string title = null)
     {
         return new WebSocketMessage
         {
@@ -60,11 +64,12 @@ public class WebSocketMessage
             TaskId = taskId,
             Status = WebSocketMessageStatus.Failed,
             Progress = 0,
-            Message = errorMessage
+            Message = errorMessage,
+            Title = title ?? "General"
         };
     }
 
-    public static WebSocketMessage CreateStatus(string taskId, string status, string message)
+    public static WebSocketMessage CreateStatus(string taskId, string status, string message, string title = null)
     {
         return new WebSocketMessage
         {
@@ -72,7 +77,8 @@ public class WebSocketMessage
             TaskId = taskId,
             Status = status,
             Progress = 0,
-            Message = message
+            Message = message,
+            Title = title ?? "General"
         };
     }
 }
