@@ -12,4 +12,6 @@ public interface IStatisticService
     Task<int> GetUniqueModsInstalledCountAsync();
     Task<List<ModInstallationRecord>> GetAllInstalledModsAsync();
     Task<int> GetModsInstalledTodayAsync();
+    Task RefreshCacheAsync();
+    Task FlushAndRefreshAsync(TimeSpan? timeout = null);
 }
