@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -76,16 +75,27 @@ public class Aria2Service : IAria2Service
 
         return installed;
     }
-
+    
     public async Task<bool> DownloadFileAsync(
         string fileUrl, 
         string downloadDirectory, 
         CancellationToken ct,
         IProgress<DownloadProgress>? progress = null)
     {
+        _logger.Info("=== ARIA2 DOWNLOAD STARTED ===");
+        _logger.Info("URL: {Url}", fileUrl);
+        _logger.Info("Directory: {Directory}", downloadDirectory);
+        _logger.Info("Progress reporter: {HasProgress}", progress != null ? "PROVIDED" : "NULL");
+        
+        // Reset the progress parser for a new download
+        Aria2ProgressParser.Reset();
+        
         var isReady = await EnsureAria2AvailableAsync(ct).ConfigureAwait(false);
         if (!isReady)
+        {
+            _logger.Error("Aria2 is not ready");
             return false;
+        }
 
         try
         {
@@ -99,16 +109,40 @@ public class Aria2Service : IAria2Service
                 rawFileName = "download.bin";
 
             var finalFileName = Uri.UnescapeDataString(rawFileName);
+            _logger.Info("Final filename: {FileName}", finalFileName);
 
             // Check if the drive where the file will be saved is an SSD or HDD
             var driveType = DriveTypeDetector.GetDriveType(sanitizedDirectory);
                 
-            // If it's an SSD, use --file-allocation=none, otherwise leave it out
-            var extraAria2Args = driveType == DriveTypeCommon.Ssd
-                ? "--log-level=debug --file-allocation=none"
-                : "--log-level=debug";
+            // Build arguments properly to enable progress output (no splitting)
+            var argumentsList = new List<string>
+            {
+                $"\"{fileUrl}\"",
+                $"--dir=\"{sanitizedDirectory}\"",
+                $"--out=\"{finalFileName}\"",
+                "--log-level=info",
+                "--console-log-level=info",
+                "--show-console-readout=true",    // This is crucial for progress output
+                "--human-readable=true",
+                "--summary-interval=1",           // Update every 1 second
+                "--download-result=full",         // Show detailed results
+                "--enable-color=false",
+                "--continue=true",                // Resume partial downloads
+                "--max-connection-per-server=1",  // Single connection only
+                "--split=1",                      // No splitting - single segment
+                "--min-split-size=1M",
+                "--piece-length=1M",             // 1MB pieces for better progress reporting
+                "--stream-piece-selector=geom",   // Geometric piece selection
+                "--uri-selector=adaptive"         // Adaptive URI selection
+            };
 
-            var arguments = $"\"{fileUrl}\" --dir=\"{sanitizedDirectory}\" --out=\"{finalFileName}\" {extraAria2Args}";
+            // Add SSD-specific optimisation
+            if (driveType == DriveTypeCommon.Ssd)
+            {
+                argumentsList.Add("--file-allocation=none");
+            }
+
+            var arguments = string.Join(" ", argumentsList);
 
             var startInfo = new ProcessStartInfo
             {
@@ -120,7 +154,10 @@ public class Aria2Service : IAria2Service
                 RedirectStandardError = true
             };
 
-            _logger.Debug("Launching aria2 with arguments: {Args}", startInfo.Arguments);
+            _logger.Info("Launching aria2 with arguments: {Args}", startInfo.Arguments);
+
+            // Send initial progress report
+            progress?.Report(new DownloadProgress { Status = "Starting download...", PercentComplete = 0 });
 
             using var process = Process.Start(startInfo);
             if (process == null)
@@ -128,6 +165,8 @@ public class Aria2Service : IAria2Service
                 _logger.Error("Failed to start aria2 at {Aria2ExePath}", Aria2ExePath);
                 return false;
             }
+
+            _logger.Info("Aria2 process started with PID: {PID}", process.Id);
 
             var stopwatch = Stopwatch.StartNew();
                 
@@ -138,27 +177,45 @@ public class Aria2Service : IAria2Service
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeoutCts.CancelAfter(TimeSpan.FromMinutes(30));
 
-            await Task.WhenAll(
-                process.WaitForExitAsync(timeoutCts.Token),
-                progressTask
-            ).ConfigureAwait(false);
+            _logger.Info("Waiting for aria2 process to complete...");
+            
+            // Add some debugging around the process wait
+            var processWaitTask = process.WaitForExitAsync(timeoutCts.Token);
+            var completedTask = await Task.WhenAny(processWaitTask, progressTask);
+            
+            if (completedTask == processWaitTask)
+            {
+                _logger.Info("Process completed first");
+                // Cancel the progress monitoring
+                await progressTask.ConfigureAwait(false);
+            }
+            else
+            {
+                _logger.Info("Progress monitoring completed first");
+                // Wait for process to complete
+                await processWaitTask.ConfigureAwait(false);
+            }
 
             stopwatch.Stop();
+            _logger.Info("Aria2 process completed in {Elapsed}", stopwatch.Elapsed);
 
             var stdOut = await process.StandardOutput.ReadToEndAsync(ct).ConfigureAwait(false);
             var stdErr = await process.StandardError.ReadToEndAsync(ct).ConfigureAwait(false);
 
             if (!string.IsNullOrWhiteSpace(stdOut))
             {
-                _logger.Debug("[aria2 STDOUT] {Output}", stdOut.Trim());
+                _logger.Info("[aria2 STDOUT] {Output}", stdOut.Trim());
             }
             if (!string.IsNullOrWhiteSpace(stdErr))
             {
-                _logger.Debug("[aria2 STDERR] {Output}", stdErr.Trim());
+                _logger.Info("[aria2 STDERR] {Output}", stdErr.Trim());
             }
+
+            _logger.Info("Aria2 exit code: {ExitCode}", process.ExitCode);
 
             if (process.ExitCode == 0)
             {
+                _logger.Info("Download completed successfully");
                 progress?.Report(new DownloadProgress
                 {
                     Status = "Completed",
@@ -189,6 +246,10 @@ public class Aria2Service : IAria2Service
             _logger.Error(ex, "Error downloading {FileUrl} via aria2", fileUrl);
             progress?.Report(new DownloadProgress { Status = "Error" });
             return false;
+        }
+        finally
+        {
+            _logger.Info("=== ARIA2 DOWNLOAD ENDED ===");
         }
     }
     
