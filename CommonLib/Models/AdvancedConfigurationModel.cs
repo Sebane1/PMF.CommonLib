@@ -10,6 +10,4 @@ public class AdvancedConfigurationModel
     public bool ShowWatchDogWindow { get; set; } = false;
     [Display(Name = "Enable Debug Logs", GroupName = "Advanced", Description = "Enable Debug Logs")]
     public bool EnableDebugLogs { get; set; }
-    [Display(Name = "XIV Mod Archive Cookie", GroupName = "Advanced", Description = "Allow the display of NSFW mods")]
-    public string XIVModArchiveCookie { get; set; }
 }
