@@ -1,6 +1,7 @@
 ﻿using System.Net.Http.Headers;
 using CommonLib.Extensions;
 using CommonLib.Interfaces;
+using CommonLib.Models;
 using Newtonsoft.Json;
 using NLog;
 
@@ -27,6 +28,12 @@ public class UpdateService : IUpdateService
 
         [JsonProperty("assets")]
         public List<GitHubAsset> Assets { get; set; }
+
+        [JsonProperty("body")]
+        public string Body { get; set; } = string.Empty;
+
+        [JsonProperty("published_at")]
+        public DateTime PublishedAt { get; set; }
     }
 
     public class GitHubAsset
@@ -91,9 +98,9 @@ public class UpdateService : IUpdateService
         return result;
     }
 
-    public async Task<string> GetMostRecentVersionAsync(string repository)
+    public async Task<VersionInfo?> GetMostRecentVersionInfoAsync(string repository)
     {
-        _logger.Debug("Entered `GetMostRecentVersionAsync`. Repository: {Repository}", repository);
+        _logger.Debug("Entered `GetMostRecentVersionInfoAsync`. Repository: {Repository}", repository);
 
         var includePrerelease = (bool)_configurationService.ReturnConfigValue(c => c.Common.IncludePrereleases);
         _logger.Debug("IncludePrerelease: {IncludePrerelease}", includePrerelease);
@@ -101,19 +108,49 @@ public class UpdateService : IUpdateService
         var latestRelease = await GetLatestReleaseAsync(includePrerelease, repository);
         if (latestRelease == null)
         {
-            _logger.Debug("No releases found. Returning empty string.");
-            return string.Empty;
+            _logger.Debug("No releases found. Returning null.");
+            return null;
         }
 
         _logger.Debug("Latest release version found: {TagName}", latestRelease.TagName);
 
+        var version = latestRelease.TagName;
         if (latestRelease.Prerelease)
         {
-            _logger.Debug("Release is a prerelease. Returning {TagName}-b.", latestRelease.TagName);
-            return $"{latestRelease.TagName}-b";
+            _logger.Debug("Release is a prerelease. Appending -b to version.");
+            version = $"{latestRelease.TagName}-b";
         }
 
-        return latestRelease.TagName;
+        var versionInfo = new VersionInfo
+        {
+            Version = version,
+            Changelog = latestRelease.Body ?? string.Empty,
+            IsPrerelease = latestRelease.Prerelease,
+            PublishedAt = latestRelease.PublishedAt
+        };
+
+        // Parse the changelog to extract structured information
+        versionInfo.ParseChangelog();
+
+        _logger.Debug("Returning version info for {Version} with {ChangeCount} changes and {DownloadCount} downloads", 
+            versionInfo.Version, versionInfo.Changes.Count, versionInfo.AvailableDownloads.Count);
+
+        return versionInfo;
+    }
+    
+    public async Task<string> GetMostRecentVersionAsync(string repository)
+    {
+        _logger.Debug("Entered `GetMostRecentVersionAsync`. Repository: {Repository}", repository);
+
+        var versionInfo = await GetMostRecentVersionInfoAsync(repository);
+        if (versionInfo == null)
+        {
+            _logger.Debug("No version info found. Returning empty string.");
+            return string.Empty;
+        }
+
+        _logger.Debug("Latest release version found: {Version}", versionInfo.Version);
+        return versionInfo.Version;
     }
 
     public async Task<GitHubRelease?> GetLatestReleaseAsync(bool includePrerelease, string repository)
