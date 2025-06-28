@@ -1,13 +1,12 @@
 ﻿
 using NLog;
 using NLog.Config;
-using NLog.Targets;
 
 namespace CommonLib.Extensions;
 
 public static class MergedDebugLogging
 {
-    private const string DebugRuleName = "RuntimeDebugRule";
+    private static readonly List<LoggingRule> _originalRules = new();
     
     public static void EnableDebugLogging()
     {
@@ -18,24 +17,28 @@ public static class MergedDebugLogging
             return;
         }
         
-        if (config.LoggingRules.Any(r => r.RuleName == DebugRuleName))
+        if (_originalRules.Any())
         {
             Console.WriteLine("Debug logging is already enabled.");
             return;
         }
-
-        if (config.AllTargets.FirstOrDefault(t => t.Name == "console") is not ConsoleTarget consoleTarget)
+        
+        _originalRules.AddRange(config.LoggingRules.ToList());
+        
+        config.LoggingRules.Clear();
+        
+        var consoleTarget = config.AllTargets.FirstOrDefault(t => t.Name == "console");
+        var fileTarget = config.AllTargets.FirstOrDefault(t => t.Name == "file");
+        
+        if (consoleTarget != null)
         {
-            Console.WriteLine("Console target not found in NLog configuration.");
-            return;
+            config.AddRule(LogLevel.Debug, LogLevel.Fatal, consoleTarget);
         }
         
-        var debugRule = new LoggingRule("*", LogLevel.Debug, LogLevel.Debug, consoleTarget)
+        if (fileTarget != null)
         {
-            RuleName = DebugRuleName
-        };
-        
-        config.LoggingRules.Add(debugRule);
+            config.AddRule(LogLevel.Debug, LogLevel.Fatal, fileTarget);
+        }
         
         LogManager.Configuration = config;
         LogManager.ReconfigExistingLoggers();
@@ -52,20 +55,20 @@ public static class MergedDebugLogging
             return;
         }
         
-        var rulesToRemove = config.LoggingRules
-            .Where(r => r.RuleName != null && r.RuleName.StartsWith(DebugRuleName))
-            .ToList();
-            
-        if (!rulesToRemove.Any())
+        if (!_originalRules.Any())
         {
-            Console.WriteLine("Debug logging rules not found in the NLog configuration.");
+            Console.WriteLine("Debug logging was not enabled or original rules not found.");
             return;
         }
         
-        foreach (var rule in rulesToRemove)
+        // Restore the original rules
+        config.LoggingRules.Clear();
+        foreach (var rule in _originalRules)
         {
-            config.LoggingRules.Remove(rule);
+            config.LoggingRules.Add(rule);
         }
+        
+        _originalRules.Clear();
         
         LogManager.Configuration = config;
         LogManager.ReconfigExistingLoggers();
