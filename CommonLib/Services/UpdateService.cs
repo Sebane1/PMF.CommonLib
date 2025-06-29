@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Headers;
+﻿
+using System.Net.Http.Headers;
 using CommonLib.Extensions;
 using CommonLib.Interfaces;
 using CommonLib.Models;
@@ -12,10 +13,14 @@ public class UpdateService : IUpdateService
     private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
     private readonly IConfigurationService _configurationService;
+    private readonly HttpClient _httpClient;
 
     public UpdateService(IConfigurationService configurationService)
     {
         _configurationService = configurationService;
+        _httpClient = new HttpClient();
+        _httpClient.DefaultRequestHeaders.UserAgent.Add(
+            new ProductInfoHeaderValue("CouncilOfTsukuyomi", "1.0"));
     }
 
     public class GitHubRelease
@@ -157,14 +162,10 @@ public class UpdateService : IUpdateService
     {
         _logger.Debug("Entered `GetLatestReleaseAsync`. IncludePrerelease: {IncludePrerelease}, Repository: {Repository}", includePrerelease, repository);
 
-        using var httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.UserAgent.Add(
-            new ProductInfoHeaderValue("CouncilOfTsukuyomi", "1.0"));
-
         var url = $"https://api.github.com/repos/{repository}/releases";
         _logger.Debug("Full releases URL: {Url}", url);
 
-        using var response = await httpClient.GetAsync(url);
+        using var response = await _httpClient.GetAsync(url);
         _logger.Debug("GitHub releases GET request completed with status code {StatusCode}", response.StatusCode);
 
         if (!response.IsSuccessStatusCode)
@@ -211,7 +212,6 @@ public class UpdateService : IUpdateService
 
         return latestRelease;
     }
-
 
     private bool IsVersionGreater(string newVersion, string oldVersion)
     {
@@ -265,5 +265,10 @@ public class UpdateService : IUpdateService
         if (minorNew < minorOld) return false;
 
         return patchNew > patchOld;
+    }
+
+    public void Dispose()
+    {
+        _httpClient?.Dispose();
     }
 }
