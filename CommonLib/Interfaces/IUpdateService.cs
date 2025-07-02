@@ -10,4 +10,6 @@ public interface IUpdateService
     Task<string> GetMostRecentVersionAsync(string repository);
     Task<VersionInfo?> GetMostRecentVersionInfoAsync(string repository);
     Task<UpdateService.GitHubRelease?> GetLatestReleaseAsync(bool includePrerelease, string repository);
+    Task<List<VersionInfo>> GetAllVersionInfoSinceCurrentAsync(string currentVersion, string repository);
+    Task<string> GetConsolidatedChangelogSinceCurrentAsync(string currentVersion, string repository);
 }

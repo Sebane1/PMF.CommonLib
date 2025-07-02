@@ -142,6 +142,190 @@ public class UpdateService : IUpdateService
 
         return versionInfo;
     }
+
+    /// <summary>
+    /// Gets all version information between the current version and the latest version
+    /// </summary>
+    /// <param name="currentVersion">The current version the user has</param>
+    /// <param name="repository">The GitHub repository</param>
+    /// <returns>List of VersionInfo for all versions newer than current, ordered from oldest to newest</returns>
+    public async Task<List<VersionInfo>> GetAllVersionInfoSinceCurrentAsync(string currentVersion, string repository)
+    {
+        _logger.Debug("Entered `GetAllVersionInfoSinceCurrentAsync`. CurrentVersion: {CurrentVersion}, Repository: {Repository}", currentVersion, repository);
+
+        var includePrerelease = (bool)_configurationService.ReturnConfigValue(c => c.Common.IncludePrereleases);
+        _logger.Debug("IncludePrerelease: {IncludePrerelease}", includePrerelease);
+        
+        var allReleases = await GetAllReleasesAsync(includePrerelease, repository);
+        if (allReleases == null || !allReleases.Any())
+        {
+            _logger.Debug("No releases found. Returning empty list.");
+            return new List<VersionInfo>();
+        }
+
+        _logger.Debug("Found {Count} total releases. Filtering for versions newer than {CurrentVersion}", allReleases.Count, currentVersion);
+
+        // Filter releases that are newer than current version
+        var newerReleases = allReleases
+            .Where(release => IsVersionGreater(release.TagName, currentVersion))
+            .OrderBy(release => GetVersionSortKey(release.TagName))
+            .ToList();
+
+        _logger.Debug("Found {Count} releases newer than current version", newerReleases.Count);
+
+        var versionInfoList = new List<VersionInfo>();
+        foreach (var release in newerReleases)
+        {
+            var version = release.TagName;
+            if (release.Prerelease)
+            {
+                version = $"{release.TagName}-b";
+            }
+
+            var versionInfo = new VersionInfo
+            {
+                Version = version,
+                Changelog = release.Body ?? string.Empty,
+                IsPrerelease = release.Prerelease,
+                PublishedAt = release.PublishedAt
+            };
+
+            // Parse the changelog to extract structured information
+            versionInfo.ParseChangelog();
+            versionInfoList.Add(versionInfo);
+
+            _logger.Debug("Added version info for {Version}", versionInfo.Version);
+        }
+
+        _logger.Debug("Returning {Count} version info objects", versionInfoList.Count);
+        return versionInfoList;
+    }
+
+    /// <summary>
+    /// Gets a consolidated changelog containing all changes since the current version
+    /// </summary>
+    /// <param name="currentVersion">The current version the user has</param>
+    /// <param name="repository">The GitHub repository</param>
+    /// <returns>A consolidated changelog string</returns>
+    public async Task<string> GetConsolidatedChangelogSinceCurrentAsync(string currentVersion, string repository)
+    {
+        _logger.Debug("Entered `GetConsolidatedChangelogSinceCurrentAsync`. CurrentVersion: {CurrentVersion}, Repository: {Repository}", currentVersion, repository);
+
+        var allVersions = await GetAllVersionInfoSinceCurrentAsync(currentVersion, repository);
+        if (!allVersions.Any())
+        {
+            _logger.Debug("No newer versions found. Returning empty changelog.");
+            return string.Empty;
+        }
+
+        var consolidatedChangelog = new System.Text.StringBuilder();
+        foreach (var version in allVersions)
+        {
+            consolidatedChangelog.AppendLine($"## {version.Version}");
+            consolidatedChangelog.AppendLine($"*Released: {version.PublishedAt:yyyy-MM-dd}*");
+            consolidatedChangelog.AppendLine();
+            consolidatedChangelog.AppendLine(version.Changelog);
+            consolidatedChangelog.AppendLine();
+        }
+
+        var result = consolidatedChangelog.ToString().Trim();
+        _logger.Debug("Generated consolidated changelog with {Length} characters covering {Count} versions", result.Length, allVersions.Count);
+        
+        return result;
+    }
+
+    /// <summary>
+    /// Gets all releases from GitHub API (minimises API calls by fetching all at once)
+    /// </summary>
+    private async Task<List<GitHubRelease>?> GetAllReleasesAsync(bool includePrerelease, string repository)
+    {
+        _logger.Debug("Entered `GetAllReleasesAsync`. IncludePrerelease: {IncludePrerelease}, Repository: {Repository}", includePrerelease, repository);
+
+        var allReleases = new List<GitHubRelease>();
+        var page = 1;
+        const int perPage = 100; // GitHub's maximum per page
+
+        while (true)
+        {
+            var url = $"https://api.github.com/repos/{repository}/releases?page={page}&per_page={perPage}";
+            _logger.Debug("Fetching releases page {Page}. URL: {Url}", page, url);
+
+            using var response = await _httpClient.GetAsync(url);
+            _logger.Debug("GitHub releases GET request for page {Page} completed with status code {StatusCode}", page, response.StatusCode);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.Error("Request for releases page {Page} did not succeed with status {StatusCode}. Response: {ErrorContent}",
+                    page, response.StatusCode, errorContent);
+                break;
+            }
+
+            List<GitHubRelease>? pageReleases;
+            try
+            {
+                pageReleases = await response.Content.ReadAsJsonAsync<List<GitHubRelease>>();
+            }
+            catch (JsonSerializationException ex)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                _logger.Error(ex, "Error during JSON deserialization for page {Page}. Actual response: {Content}", page, content);
+                break;
+            }
+
+            if (pageReleases == null || !pageReleases.Any())
+            {
+                _logger.Debug("No more releases found on page {Page}. Breaking pagination loop.", page);
+                break;
+            }
+
+            allReleases.AddRange(pageReleases);
+            _logger.Debug("Added {Count} releases from page {Page}. Total releases so far: {Total}", pageReleases.Count, page, allReleases.Count);
+
+            // If we got less than the full page, we've reached the end
+            if (pageReleases.Count < perPage)
+            {
+                _logger.Debug("Page {Page} returned fewer than {PerPage} releases. End of pagination reached.", page, perPage);
+                break;
+            }
+
+            page++;
+        }
+
+        _logger.Debug("Fetched {Count} total releases across {Pages} pages", allReleases.Count, page);
+
+        if (!includePrerelease)
+        {
+            var beforeFilter = allReleases.Count;
+            allReleases = allReleases.Where(r => !r.Prerelease).ToList();
+            _logger.Debug("Filtered out prereleases. Before: {Before}, After: {After}", beforeFilter, allReleases.Count);
+        }
+
+        return allReleases;
+    }
+
+    /// <summary>
+    /// Creates a version sort key for proper semantic version ordering
+    /// </summary>
+    private (int major, int minor, int patch) GetVersionSortKey(string version)
+    {
+        var cleanVersion = version.StartsWith("v", StringComparison.OrdinalIgnoreCase) 
+            ? version.Substring(1) 
+            : version;
+
+        var parts = cleanVersion.Split('.');
+        if (parts.Length != 3)
+        {
+            // Fallback for non-standard version formats
+            return (0, 0, 0);
+        }
+
+        var major = int.TryParse(parts[0], out var maj) ? maj : 0;
+        var minor = int.TryParse(parts[1], out var min) ? min : 0;
+        var patch = int.TryParse(parts[2], out var pat) ? pat : 0;
+
+        return (major, minor, patch);
+    }
     
     public async Task<string> GetMostRecentVersionAsync(string repository)
     {
