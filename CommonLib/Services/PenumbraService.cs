@@ -156,6 +156,40 @@ public class PenumbraService : IPenumbraService
                         return null;
                     return Path.Combine(destinationFolderPath, entry.FileName ?? string.Empty);
                 });
+                
+                _logger.Info("Checking for and cleaning up .bak files...");
+                if (Directory.Exists(destinationFolderPath))
+                {
+                    // This is a hack fix for a really eccentric bug someone was running into, some mods were having .json files turned into .json.bak 
+                    // Let's just change them
+                    var bakFiles = Directory.GetFiles(destinationFolderPath, "*.bak", SearchOption.AllDirectories);
+                    foreach (var bakFile in bakFiles)
+                    {
+                        var originalFileName = bakFile.Substring(0, bakFile.Length - 4);
+                        
+                        try
+                        {
+                            if (!File.Exists(originalFileName))
+                            {
+                                File.Move(bakFile, originalFileName);
+                                _logger.Info("Renamed .bak file: {BakFile} -> {OriginalFile}", 
+                                    Path.GetFileName(bakFile), Path.GetFileName(originalFileName));
+                            }
+                            else
+                            {
+                                File.Delete(bakFile);
+                                _logger.Info("Deleted redundant .bak file: {BakFile} (original exists)", 
+                                    Path.GetFileName(bakFile));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.Error(ex, "Failed to process .bak file: {BakFile}", bakFile);
+                        }
+                    }
+                }
+
+                extractionSuccessful = true;
             }
 
             // Validate that the extracted files match exactly the archive contents.
