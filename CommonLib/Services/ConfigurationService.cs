@@ -16,7 +16,7 @@ public class ConfigurationService : IConfigurationService
     private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
     private readonly IFileStorage _fileStorage;
-    private readonly IMapper _mapper;  // Inject AutoMapper
+    private readonly IMapper _mapper;
     private ConfigurationModel _config;
     private readonly object _configWriteLock = new();
         
@@ -26,7 +26,7 @@ public class ConfigurationService : IConfigurationService
     {
         _fileStorage = fileStorage;
         _mapper = mapper;
-        LoadConfiguration();   // Load (and migrate if needed)
+        LoadConfiguration();
     }
 
     /// <summary>
@@ -64,6 +64,16 @@ public class ConfigurationService : IConfigurationService
                     SaveConfiguration(newConfig, detectChangesAndInvokeEvents: false);
 
                     _logger.Info("Migration from old config.json to config-v3.json successfully completed.");
+
+                    try
+                    {
+                        _logger.Info("Deleting old config.json...");
+                        _fileStorage.Delete(legacyFilePath);
+                    } 
+                    catch (Exception ex)
+                    {
+                        _logger.Warn(ex, "Failed to delete old config.json. Please delete it manually.");
+                    }
                 }
                 else
                 {
