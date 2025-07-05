@@ -12,6 +12,8 @@ public class UIConfigurationModel
     public bool NotificationSoundEnabled { get; set; } 
     [Display(Name = "Minimise To Tray", GroupName = "User Interface", Description = "Minimise the Main Window to tray")]
     public bool MinimiseToTray { get; set; } = false;
+    [Display(Name = "Show Notification Button", GroupName = "User Interface", Description = "Show the Notification Button")]
+    public bool ShowNotificationButton { get; set; } = true;
     [ExcludeFromSettingsUI]
     public double NotificationButtonX { get; set; } = 20;
     [ExcludeFromSettingsUI]
