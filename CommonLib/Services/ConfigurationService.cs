@@ -47,12 +47,14 @@ public class ConfigurationService : IConfigurationService
                     legacyFilePath
                 );
 
-                // Read old config file
-                using var stream = _fileStorage.OpenRead(legacyFilePath);
-                using var reader = new StreamReader(stream);
-                var oldConfigJson = reader.ReadToEnd();
-
-                // Deserialize old config
+                string oldConfigJson;
+                
+                using (var stream = _fileStorage.OpenRead(legacyFilePath))
+                using (var reader = new StreamReader(stream))
+                {
+                    oldConfigJson = reader.ReadToEnd();
+                }
+                
                 var oldConfig = JsonConvert.DeserializeObject<OldConfigModel.OldConfigurationModel>(oldConfigJson);
 
                 if (oldConfig != null)
@@ -69,6 +71,7 @@ public class ConfigurationService : IConfigurationService
                     {
                         _logger.Info("Deleting old config.json...");
                         _fileStorage.Delete(legacyFilePath);
+                        _logger.Info("Old config.json deleted successfully.");
                     } 
                     catch (Exception ex)
                     {
