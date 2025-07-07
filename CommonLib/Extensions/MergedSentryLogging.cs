@@ -32,7 +32,8 @@ public static class MergedSentryLogging
             options.MinimumEventLevel = LogLevel.Error;
             options.AddTag("logger", "${logger}");
             options.Release = semVersion;
-            options.AttachStacktrace = true; 
+            options.AttachStacktrace = true;
+            options.SendDefaultPii = false;
         });
         
         LogManager.Configuration = config;
