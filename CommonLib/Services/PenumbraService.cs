@@ -77,7 +77,6 @@ public class PenumbraService : IPenumbraService
             _fileStorage.CreateDirectory(penumbraPath);
         }
 
-        // Process meta.json to determine destination folder name.
         var destinationFolderName = Path.GetFileNameWithoutExtension(sourceFilePath);
         using (var archiveForMeta = new ArchiveFile(sourceFilePath))
         {
@@ -87,7 +86,6 @@ public class PenumbraService : IPenumbraService
 
             if (metaEntry != null)
             {
-                // Extract only meta.json to a temporary file.
                 var tempMetaFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".json");
                 archiveForMeta.Extract(entry =>
                 {
@@ -124,10 +122,8 @@ public class PenumbraService : IPenumbraService
             }
         }
 
-        // Clean up invalid characters for the file system.
         destinationFolderName = RemoveInvalidPathChars(destinationFolderName);
 
-        // Create final destination folder.
         var destinationFolderPath = Path.Combine(penumbraPath, destinationFolderName);
         if (!_fileStorage.Exists(destinationFolderPath))
         {
@@ -141,7 +137,6 @@ public class PenumbraService : IPenumbraService
         while (attempt < maxAttempts && !extractionSuccessful)
         {
             attempt++;
-            // If this is a retry, clear the destination folder before reattempting.
             if (attempt > 1)
             {
                 _logger.Info("Retrying extraction attempt {Attempt} for {SourceFile}", attempt, sourceFilePath);
@@ -157,42 +152,10 @@ public class PenumbraService : IPenumbraService
                     return Path.Combine(destinationFolderPath, entry.FileName ?? string.Empty);
                 });
                 
-                _logger.Info("Checking for and cleaning up .bak files...");
-                if (Directory.Exists(destinationFolderPath))
-                {
-                    // This is a hack fix for a really eccentric bug someone was running into, some mods were having .json files turned into .json.bak 
-                    // Let's just change them
-                    var bakFiles = Directory.GetFiles(destinationFolderPath, "*.bak", SearchOption.AllDirectories);
-                    foreach (var bakFile in bakFiles)
-                    {
-                        var originalFileName = bakFile.Substring(0, bakFile.Length - 4);
-                        
-                        try
-                        {
-                            if (!File.Exists(originalFileName))
-                            {
-                                File.Move(bakFile, originalFileName);
-                                _logger.Info("Renamed .bak file: {BakFile} -> {OriginalFile}", 
-                                    Path.GetFileName(bakFile), Path.GetFileName(originalFileName));
-                            }
-                            else
-                            {
-                                File.Delete(bakFile);
-                                _logger.Info("Deleted redundant .bak file: {BakFile} (original exists)", 
-                                    Path.GetFileName(bakFile));
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.Error(ex, "Failed to process .bak file: {BakFile}", bakFile);
-                        }
-                    }
-                }
-
+                ProcessBakFiles(destinationFolderPath);
                 extractionSuccessful = true;
             }
 
-            // Validate that the extracted files match exactly the archive contents.
             using (var archive = new ArchiveFile(sourceFilePath))
             {
                 var expectedFiles = archive.Entries
@@ -200,7 +163,6 @@ public class PenumbraService : IPenumbraService
                     .Select(e => Path.Combine(destinationFolderPath, e.FileName))
                     .ToList();
 
-                // Check that each expected file exists.
                 var allFilesExtracted = expectedFiles.All(file => _fileStorage.Exists(file));
 
                 if (allFilesExtracted && expectedFiles.Count > 0)
@@ -220,11 +182,65 @@ public class PenumbraService : IPenumbraService
             throw new InvalidOperationException($"Failed to fully extract mod files from archive {sourceFilePath} after {maxAttempts} attempts.");
         }
 
-        // Optionally remove the original archive
-        // _fileStorage.Delete(sourceFilePath);
-
         _logger.Info("Installed archive from {Source} into {Destination}", sourceFilePath, destinationFolderPath);
         return destinationFolderPath;
+    }
+
+    public void ValidateAndCleanupBakFiles(string directoryPath)
+    {
+        if (!Directory.Exists(directoryPath))
+        {
+            _logger.Warn("Directory does not exist for .bak validation: {DirectoryPath}", directoryPath);
+            return;
+        }
+
+        _logger.Info("Validating and cleaning up .bak files in {DirectoryPath}", directoryPath);
+        ProcessBakFiles(directoryPath);
+    }
+
+    // This is a hack fix for a really eccentric bug where some mods have .json files turned into .json.bak
+    private void ProcessBakFiles(string directoryPath)
+    {
+        if (!Directory.Exists(directoryPath))
+            return;
+
+        _logger.Info("Processing .bak files in {DirectoryPath}", directoryPath);
+        
+        var bakFiles = Directory.GetFiles(directoryPath, "*.bak", SearchOption.AllDirectories);
+        var processedCount = 0;
+        var renamedCount = 0;
+        var deletedCount = 0;
+
+        foreach (var bakFile in bakFiles)
+        {
+            var originalFileName = bakFile.Substring(0, bakFile.Length - 4);
+            
+            try
+            {
+                if (!File.Exists(originalFileName))
+                {
+                    File.Move(bakFile, originalFileName);
+                    renamedCount++;
+                    _logger.Info("Renamed orphaned .bak file: {BakFile} -> {OriginalFile}", 
+                        Path.GetFileName(bakFile), Path.GetFileName(originalFileName));
+                }
+                else
+                {
+                    File.Delete(bakFile);
+                    deletedCount++;
+                    _logger.Info("Deleted redundant .bak file: {BakFile} (original exists)", 
+                        Path.GetFileName(bakFile));
+                }
+                processedCount++;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to process .bak file: {BakFile}", bakFile);
+            }
+        }
+
+        _logger.Info("Completed .bak file processing: {ProcessedCount} processed, {RenamedCount} renamed, {DeletedCount} deleted", 
+            processedCount, renamedCount, deletedCount);
     }
 
     private string FindPenumbraPath()
