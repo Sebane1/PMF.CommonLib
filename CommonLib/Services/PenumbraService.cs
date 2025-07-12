@@ -202,17 +202,42 @@ public class PenumbraService : IPenumbraService
     private void ProcessBakFiles(string directoryPath)
     {
         if (!Directory.Exists(directoryPath))
+        {
+            _logger.Warn("Directory does not exist for .bak processing: {DirectoryPath}", directoryPath);
             return;
+        }
 
         _logger.Info("Processing .bak files in {DirectoryPath}", directoryPath);
         
-        var bakFiles = Directory.GetFiles(directoryPath, "*.bak", SearchOption.AllDirectories);
+        var bakFiles = Directory.GetFiles(directoryPath, "*.bak", SearchOption.TopDirectoryOnly);
+        
+        _logger.Debug("Found {BakFileCount} .bak files in root directory: {DirectoryPath}", bakFiles.Length, directoryPath);
+        
+        if (bakFiles.Length == 0)
+        {
+            _logger.Debug("No .bak files found in root directory. Listing all files in root for debugging:");
+            try
+            {
+                var allFiles = Directory.GetFiles(directoryPath, "*", SearchOption.TopDirectoryOnly);
+                foreach (var file in allFiles)
+                {
+                    _logger.Debug("Found file: {FileName}", Path.GetFileName(file));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn(ex, "Failed to list files in root directory for debugging");
+            }
+        }
+        
         var processedCount = 0;
         var renamedCount = 0;
         var deletedCount = 0;
 
         foreach (var bakFile in bakFiles)
         {
+            _logger.Debug("Processing .bak file: {BakFile}", Path.GetFileName(bakFile));
+            
             var originalFileName = bakFile.Substring(0, bakFile.Length - 4);
             
             try
