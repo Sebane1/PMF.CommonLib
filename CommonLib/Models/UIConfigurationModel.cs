@@ -10,7 +10,7 @@ public class UIConfigurationModel
 
     [Display(Name = "Enable Notification Sound", GroupName = "Notification", Description = "Sound for Notifications")]
     public bool NotificationSoundEnabled { get; set; }
-    [Display(Name = "Minimise To Tray", GroupName = "User Interface", Description = "Atomos will continue running after closing the window and be available in the tray")]
+    [Display(Name = "Close To Tray", GroupName = "User Interface", Description = "Atomos will continue running after closing the window and be available in the tray")]
     public bool MinimiseToTray { get; set; } = false;
     [Display(Name = "Show Notification Button", GroupName = "User Interface", Description = "Show the Notification Button")]
     public bool ShowNotificationButton { get; set; } = true;
